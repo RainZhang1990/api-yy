@@ -131,4 +131,4 @@ dmypy.json
 !.vscode/extensions.json
 *.code-workspace
 
-.yaml
+*.yaml
