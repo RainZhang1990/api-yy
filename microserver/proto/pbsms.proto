@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package pbsms;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+service SmsService {
+    rpc Send (SmsRequest) returns (google.protobuf.Empty);
+
+    rpc SendInstant (SmsRequest) returns (google.protobuf.Empty);
+}
+
+//-----------------------------------------------------------------------------------------------------------------
+
+message SmsRequest {
+    int64 product_id = 1;
+    string template = 2;
+    string mobile = 3;
+    string params = 4;
+    string extend = 5;
+
+    google.protobuf.Timestamp expiration_at = 6; // 过期时间，默认不过期
+}

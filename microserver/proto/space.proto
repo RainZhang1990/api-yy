@@ -1,0 +1,221 @@
+syntax = "proto3";
+
+package space;
+
+import "google/protobuf/timestamp.proto";
+
+
+// service Space
+service Space {
+    // Create space
+    rpc CreateSpace (SpaceCreate) returns (SpaceID) {}
+    // Update name, cover_image
+    rpc UpdateSpaceInfo (Info) returns (ResultOfAction) {}
+    // UpdateSpaceStatus
+    rpc UpdateSpaceStatus (Status) returns (ResultOfAction) {}
+    // set follower
+    rpc SetFollower (FollowerData) returns (ResultOfAction) {}
+    // update follower
+    rpc UpdateFollower (FollowerInfo) returns (ResultOfAction) {}
+    // update permission of follower
+    rpc UpdateFollowerPermission (FollowerData) returns (ResultOfAction) {}
+
+    // search follower with key
+    rpc SearchFollower (FollowerKey) returns (FollowerData) {}
+    // delete follower with key
+    rpc DeleteFollower (FollowerKey) returns (ResultOfAction) {}
+    // Get space details by space id
+    rpc GetSpaceDetailsBySpaceID (SpaceID) returns (SpaceDetails) {}
+    // Get space details by owner id
+    rpc GetSpaceDetailsByOwnerID (OwnerID) returns (SpaceDetails) {}
+    // Get space details by follower id
+    rpc GetSpaceDetailsByFollowerID (FollowerID) returns (AllSpaceDetails) {}
+    //
+    rpc GetAuthOwnerIDList (FollowerID) returns (SpaceAndOwnerIDList) {}
+    //
+    rpc GetSpaceCount (FollowerID) returns (SpaceCount) {}
+    // Get follower details by space id
+    rpc GetFollowerDetailsBySpaceID (SpaceID) returns (AllFollowerDetails) {}
+    // save invite_code
+    rpc SaveInviteCode (SpaceIDCode) returns (ResultOfAction) {}
+    // get invite_code
+    rpc GetInviteCode (SpaceID) returns (InviteCode) {}
+    // get space_id by invite_code
+    rpc GetSpaceID (InviteCode) returns (SpaceID) {}
+
+    // get all relation
+    rpc GetAllRelation (Empty) returns (RelationList) {}
+    // add relation
+    rpc AddRelation (Relation) returns (ResultOfAction) {}
+    // set relation
+    rpc SetRelation (Relation) returns (ResultOfAction) {}
+    // delete relation
+    rpc DeleteRelation (RelationID) returns (ResultOfAction) {}
+    // get relation
+    rpc GetRelationByRelationID(RelationID) returns (Relation) {}
+
+    //get all group
+    rpc GetAllGroup (SpaceID) returns (GroupList) {}
+    //add group
+    rpc AddGroup (Group) returns (GroupID) {}
+    // set group
+    rpc SetGroup (Info) returns (ResultOfAction) {}
+    // delete group
+    rpc DeleteGroup (GroupID) returns (ResultOfAction) {}
+    // get group by group_id
+    rpc GetGroupByGroupID (GroupID) returns (Group) {}
+    // get group count by group_id
+    rpc GetGroupCountByGroupID (GroupID) returns (GroupCount) {}
+    // get default group count by space_id
+    rpc GetDefaultGroupCountByGroupID (SpaceID) returns (GroupCount) {}
+}
+
+message SpaceCreate {
+ int64 space_id = 1;
+ int64 owner_id = 2;
+ int64 create_by = 3;
+ string space_name = 4;
+ string cover_image = 5;
+ int32 status = 6;
+}
+
+message InviteCode {
+  int64 invite_code = 1;
+}
+
+message SpaceID {
+  int64 space_id = 1;
+}
+
+message OwnerID {
+  int64 owner_id = 1;
+}
+
+message FollowerID {
+  int64 follower_id = 1;
+}
+
+message SpaceAndOwnerIDList {
+  repeated SpaceAndOwnerID space_owner_id_list = 1;
+}
+
+message SpaceAndOwnerID {
+    int64 space_id = 1;
+    int64 owner_id = 2;
+}
+
+message Info {
+  map<string, string> params = 1;
+}
+
+message FollowerInfo {
+  map<string, string> params = 1;
+}
+
+message ResultOfAction {
+  bool is_done = 1;
+}
+
+message Status {
+  int64 space_id = 1;
+  int32 status = 2;
+}
+
+message SpaceDetails {
+ int64 space_id = 1;
+ int64 owner_id = 2;
+ string space_name = 3;
+ string cover_image = 4;
+ string birth_time = 5;
+ int32 status = 6;
+ int64 create_by = 7;
+ google.protobuf.Timestamp create_at = 8;
+ google.protobuf.Timestamp update_at = 9;
+}
+
+// The request message containing the data to update
+message FollowerData {
+  int64 space_id = 1;
+  int64 follower_id = 2;
+  int64 group_id = 3;
+  int32 relation_id = 4;
+  string relation_name = 5;
+  string space_nickname = 6;
+}
+
+// The request message containing the key
+message FollowerKey {
+  int64 space_id = 1;
+  int64 follower_id = 2;
+}
+
+message AllSpaceDetails {
+  repeated SpaceDetails space_details = 1;
+}
+
+
+message FollowerDetails {
+  int64 space_id = 1;
+  int64 follower_id = 2;
+  int64 group_id = 3;
+  int32 relation_id = 4;
+  string relation_name = 5;
+  google.protobuf.Timestamp create_at = 6;
+  google.protobuf.Timestamp update_at = 7;
+}
+
+message AllFollowerDetails {
+  repeated FollowerDetails follower_lists = 1;
+}
+
+message SpaceCount {
+  int32 space_count = 1;
+}
+
+message SpaceIDCode {
+  int64 space_id = 1;
+  int64 invite_code = 2;
+}
+
+
+message RelationID {
+  int32 relation_id = 1;
+}
+
+message Relation {
+  int32 relation_id = 1;
+  bool relation_unique = 2;
+  repeated string name = 3;
+}
+
+message RelationInfo {
+  bool relation_unique = 1;
+  repeated string name = 2;
+}
+
+message RelationList {
+  repeated Relation relation = 1;
+}
+
+message Empty {
+
+}
+
+message GroupID{
+  int64 group_id = 1;
+}
+
+message Group {
+  int64 group_id = 1;
+  int64 space_id = 2;
+  string group_name = 3;
+  int32 permission_level = 4;
+}
+
+message GroupList {
+  repeated Group group_list = 1;
+}
+
+message GroupCount{
+  int32 group_count = 1;
+}

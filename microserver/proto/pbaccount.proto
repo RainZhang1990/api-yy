@@ -1,0 +1,322 @@
+syntax = "proto3";
+
+package pbaccount;
+
+//import "google/protobuf/any.proto";
+//
+//message ErrorStatus {
+//    string message = 1;
+//    repeated google.protobuf.Any details = 2;
+//}
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/empty.proto";
+
+
+service AccountService {
+
+    // 是否有某个产品的授权
+    rpc HasProductAuthorize (ProductAuthorizeQueryRequest) returns (ExistsResult) {
+    }
+
+    // 授权（或取消授权）用户使用某项功能。至于是否有权限，业务系统或者管理后台需要进行严格判断
+    rpc ProductAuthorize (ProductAuthorizeRequest) returns (google.protobuf.Empty) {
+    }
+
+    //-----------------------------------------------------------------------------------------------------------------
+
+    // 是否存在某个账号。不管账号的状态，只要存在就确认存在。
+    rpc ExistsAccount (AccountRequest) returns (ExistsResult);
+
+    // 获得账号信息，通过用户账号获取，不需要密码。注意：如果app_id参数不存在，则不能获取到用户的Token；需要进行认证的地方，业务系统应慎重调用，比如尽量调用AuthAccountToken接口
+    rpc GetAccount (GetAccountRequest) returns (Account);
+
+    // 账号认证，需要密码
+    rpc AuthAccount (AuthAccountRequest) returns (Account);
+
+    // 通过Token进行账号认证
+    rpc AuthAccountToken (AuthAccountTokenRequest) returns (Account);
+
+    // 添加账号
+    rpc CreateAccount (AccountCreateRequest) returns (Account);
+
+    // 更新账号信息（不包括密码、第三方账号信息等）
+    rpc Update (AccountUpdateRequest) returns (google.protobuf.Empty);
+
+    // 修改密码
+    rpc ChangePassword (PasswordChangeRequest) returns (google.protobuf.Empty);
+
+    // 重置密码（不需要进行认证，业务系统应慎重调用）
+    rpc ResetPassword (PasswordResetRequest) returns (google.protobuf.Empty);
+
+    // 更新账号状态（激活、未激活、锁定并暂停账号或封号、用户注销账号等）
+    rpc UpdateAccountStatus (AccountStatusRequest) returns (google.protobuf.Empty);
+
+    // 用第三方账号新建账号
+    rpc CreateAccountByPartnerAccount (CreateAccountByPartnerAccountRequest) returns (Account);
+
+    // 是否存在第三方账号
+    rpc ExistsPartnerAccount (PartnerAccountRequest) returns (ExistsResult);
+
+    // 通过第三方账号进行认证
+    rpc AuthPartnerAccount (PartnerAccountAuthRequest) returns (Account);
+
+    // 绑定第三方账号
+    rpc PartnerAccountBind (PartnerAccountBindRequest) returns (google.protobuf.Empty);
+
+    // 修改第三方账号的origin_data
+    rpc UpdatePartnerAccountOriginData (PartnerAccountUpdateOriginDataRequest) returns (google.protobuf.Empty);
+
+    // 解绑第三方账号
+    rpc PartnerAccountRelease (PartnerAccountReleaseRequest) returns (google.protobuf.Empty);
+
+    //-----------------------------------------------------------------------------------------------------------------
+
+    // 获取用户信息（不需要token。因为如果需要TOKEN，则无法获取从属的用户信息。如家有宝贝记录产品里，宝宝也会独立建账号，但是无法登录，此时就不存在TOKEN）
+    rpc GetUserInfo (UserInfoRequest) returns (UserInfo);
+
+    // 更新用户信息，不包括头像及生日（不需要token。因为如果需要TOKEN，则无法获取从属的用户信息。如家有宝贝记录产品里，宝宝也会独立建账号，但是无法登录，此时就不存在TOKEN）
+    rpc UpdateUserInfo (UserInfoUpdateRequest) returns (google.protobuf.Empty);
+
+    // 设置头像（不需要token。因为如果需要TOKEN，则无法获取从属的用户信息。如家有宝贝记录产品里，宝宝也会独立建账号，但是无法登录，此时就不存在TOKEN）
+    rpc UpdateUserAvatar (UserAvatarUpdateRequest) returns (google.protobuf.Empty);
+
+    // 设置DOB（不需要token。因为如果需要TOKEN，则无法获取从属的用户信息。如家有宝贝记录产品里，宝宝也会独立建账号，但是无法登录，此时就不存在TOKEN）
+    rpc UpdateUserDOB (UserDOBUpdateRequest) returns (google.protobuf.Empty);
+}
+
+
+message ActionResult {
+    bool done = 1;
+}
+
+message ExistsResult {
+    bool exists = 1;
+}
+
+message ProductAuthorizeQueryRequest {
+    int64 account_id = 1;
+    int64 product_id = 2;
+}
+
+message ProductAuthorizeRequest {
+    int64 account_id = 1;
+    int64 product_id = 2;
+    bool authorize_request = 3; // 是否授权
+}
+
+enum AccountStatus {
+    STATUS_UNKNOWN = 0; // 未知状态的账号
+    STATUS_ACTIVATED = 1; // 正常可用账号
+    STATUS_UNACTIVATED = 2; // 未激活账号
+    STATUS_DISABLED = 3; // 锁定并暂停账号或封号
+    STATUS_DELETED = 4; // 用户注销了账号
+}
+
+message Mobile {
+    string country_code = 1; // 国际区号（不带 "+" ）
+    string mobile = 2;
+}
+
+message AccountRequest {
+    oneof account {
+        int64 account_id = 1;
+        string username = 2;
+        Mobile mobile = 3;
+        string email = 4;
+    }
+}
+
+message GetAccountRequest {
+    AccountRequest account_request = 1;
+    int64 app_id = 2;
+}
+
+message Account {
+    int64 account_id = 1;
+    string username = 2;
+    Mobile mobile = 3;
+    string email = 4;
+
+    repeated PartnerAccount partner = 10;
+
+    AccountStatus status = 12;
+    string auth_token = 13;
+
+    google.protobuf.Timestamp create_at = 14;
+    google.protobuf.Timestamp update_at = 15;
+}
+
+message AuthAccountRequest {
+    AccountRequest account = 1;
+    string password = 2;
+
+    int64 app_id = 14;
+    bool auto_authorize = 15; // 如果用户没有某产品的权限，是否自动给予用户授权
+}
+
+message AuthAccountTokenRequest {
+    string auth_token = 1;
+    int64 app_id = 2;
+}
+
+message AccountCreateRequest {
+    string username = 1;
+    Mobile mobile = 2;
+    string email = 3;
+    string password = 4;
+
+    int64 app_id = 15; // 存在app_id，就会自动给予用户产品的授权
+}
+
+message AccountUpdateRequest {
+    string auth_token = 1;
+    string username_new = 2;
+    Mobile mobile_new = 3;
+    string email_new = 4;
+    int64 app_id = 15;
+}
+
+message PasswordChangeRequest {
+    string auth_token = 1;
+    string password_origin = 2;
+    string password_new = 3;
+
+    int64 app_id = 15;
+}
+
+message PasswordResetRequest {
+    AccountRequest account_request = 1;
+    string password_new = 2;
+}
+
+message AccountStatusRequest {
+    AccountRequest account_request = 1;
+    AccountStatus status = 2;
+    string details = 3;
+}
+
+// Partner ------------------------------------------------- BEGIN
+enum Partner {
+    PARTNER_UNKNOWN = 0;
+    PARTNER_FACEBOOK = 1;
+    PARTNER_GOOGLE = 2;
+    PARTNER_WECHAT = 3;
+    PARTNER_QQ = 4;
+    PARTNER_WEIBO = 5;
+}
+
+message CreateAccountByPartnerAccountRequest {
+    Partner partner = 1;
+    string identifier = 2;
+    google.protobuf.Struct origin_data = 3;
+
+    int64 app_id = 15;
+}
+
+message PartnerAccount {
+    Partner partner = 1;
+    string identifier = 2;
+    google.protobuf.Struct origin_data = 3;
+    google.protobuf.Timestamp create_at = 14;
+    google.protobuf.Timestamp update_at = 15;
+}
+
+message PartnerAccountRequest {
+    Partner partner = 1;
+    string identifier = 2;
+
+    int64 app_id = 15;
+}
+
+message PartnerAccountAuthRequest {
+    Partner partner = 1;
+    string identifier = 2;
+
+    int64 app_id = 14;
+    bool auto_authorize = 15; // 如果用户没有某产品的权限，是否自动给予用户授权
+}
+
+message PartnerAccountBindRequest {
+    string auth_token = 1;
+    Partner partner = 2;
+    string identifier = 3;
+    google.protobuf.Struct origin_data = 4;
+
+    int64 app_id = 15;
+}
+
+message PartnerAccountUpdateOriginDataRequest {
+    string auth_token = 1;
+    Partner partner = 2;
+    string identifier = 3;
+    google.protobuf.Struct origin_data = 4;
+
+    int64 app_id = 15;
+}
+
+
+message PartnerAccountReleaseRequest {
+    string auth_token = 1;
+    Partner partner = 2;
+    string identifier = 3;
+
+    int64 app_id = 15;
+}
+
+// Partner ------------------------------------------------- END
+
+// UserInfo ------------------------------------------------- BEGIN
+enum UserGender {
+    USERGENDER_UNKNOWN = 0;
+    USERGENDER_MALE = 1;
+    USERGENDER_FEMALE = 2;
+}
+
+enum UserStage {
+    USERSTAGE_UNKNOWN = 0;
+    USERSTAGE_UNBORN = 1;
+    USERSTAGE_BORN = 2;
+}
+
+message UserInfoRequest {
+    int64 account_id = 1;
+    int64 app_id = 15;
+}
+
+message UserInfo {
+    string name = 1;
+    string nickname = 2;
+    string avatar = 3;
+    UserGender gender = 4;
+    string en_name = 5;
+    string dob = 6;
+    UserStage stage = 7;
+}
+
+message UserInfoUpdateRequest {
+    int64 account_id = 1;
+    map<string, string> params = 2;
+
+    int64 app_id = 15;
+}
+
+message UserAvatarUpdateRequest {
+    int64 account_id = 1;
+    string avatar = 2;
+
+    int64 app_id = 15;
+}
+
+message UserDOBUpdateRequest {
+    int64 account_id = 1;
+    string dob = 2;
+    UserStage stage = 3;
+
+    int64 app_id = 15;
+}
+
+// UserInfo ------------------------------------------------- END
+
+//-----------------------------------------------------------------------------------------------------------------

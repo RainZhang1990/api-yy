@@ -1,0 +1,159 @@
+syntax = "proto3";
+
+package pbpush;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/empty.proto";
+
+service PushService {
+
+  // 更新Device信息
+  rpc UpdateDevice(Device) returns (google.protobuf.Empty);
+
+  // 获取某用户所有的Device列表
+  // rpc ListDevices (QueryDevicesRequest) returns (DevicesResponse);
+
+  //-----------------------------------------------------------------------------------------------------------------
+
+  // 推送给某个用户下所有的Device
+  rpc Send(PushJob) returns (PushJobID);
+
+  // 获取推送JOB的状态
+  rpc GetJobStatus(PushJobID) returns (PushJobStatusResponse);
+}
+
+enum GroupFilter {
+  GROUP_ALL = 0;    // 推送给所有用户
+  GROUP_MEMBER = 1; // 推送给注册用户
+  GROUP_GUEST = 2;  // 推送给所有游客
+}
+
+enum TagOps {
+  TAGOPS_AND = 0; // and操作
+  TAGOPS_OR = 1;  // or操作
+}
+
+enum Level {
+  Low = 0;
+  High = 1;
+}
+
+message AccountFilter {
+  repeated int64 accounts = 1; // 单次最多允许操作1000个
+}
+
+message DeviceFilter {
+  repeated string devices = 1; // 单次最多允许操作1000个
+}
+
+message TagsFilter {
+  GroupFilter group = 1; // 限定群组（所有用户、所有注册用户、所有游客）
+  repeated string tags = 2; // tag lists
+  TagOps tag_ops = 3;       // tag 操作类型
+}
+
+message PushJobFilter {
+  oneof filter {
+    AccountFilter account = 1; // 推送给账号，单次最多允许操作1000个
+    DeviceFilter device = 2; // 推送给设备，单次最多允许操作1000个
+    TagsFilter tags = 3;     // 推送给符合tag条件的设备
+  }
+}
+
+message PushJob {
+  int64 product_id = 1; // 调用方必须自行保证product_id存在，且正确。
+  int64 app_id = 2; // 如果未设置app_id，代表发给这个product下的所有app。如果设置了app_id，则只指代此app_id所代表的APP
+  PushJobFilter job_filter = 3; // 如果是DeviceFilter，忽略product_id及app_id的值
+  Level level = 4;
+  map<string, bytes>payload = 5; // string是平台，可选值有apns/android_xg/wxapp等。bytes是针对平台特定的推送内容
+
+  map<string, string> additional_params = 10; // 可选参数。用以标识推送或者消息存储的一些配置。信鸽Android透传消息使用配置：xg.message_type=2（默认为1，表示通知消息）
+
+  google.protobuf.Timestamp schedule_at = 13; // 定时执行推送时间，如果为空，则为立即执行推送
+  google.protobuf.Timestamp expiration_at = 14; // 过期时间，默认有效期48小时
+
+  MessageObject msg_object = 15; // 需要保存到msgbox的消息内容
+}
+
+message MessageBody {
+  string msg_title = 1;
+  google.protobuf.Struct msg_content = 2;
+}
+
+message MessageObject {
+  int32 msg_type = 1;
+  int64 space_id = 2;
+  int64 from_id = 3;
+  oneof message {
+    MessageBody message_body = 4;
+    int64 group_message_id = 5;
+  }
+}
+
+message PushJobID { int64 job_id = 1; }
+
+enum JobStatus {
+  JOBSTATUS_UNKNOWN = 0;
+  JOBSTATUS_NEW = 1;               // 新任务
+  JOBSTATUS_SCHEDULED = 2;         // 已调度到推送队列
+  JOBSTATUS_ANALYSING_PUSHING = 3; // 正在分析JOB，同时正在推送过程中
+  JOBSTATUS_PUSHING = 4;           // 已完成JOB分析，正在推送过程中
+  JOBSTATUS_DONE = 5;              // 推送任务全部完成
+}
+
+message PushJobStatusResponse {
+  int64 job_id = 1;
+  int64 msg_count = 2;
+  int64 msg_done = 3;
+  int64 msg_successful = 4;
+  int64 msg_failed = 5;
+  int64 msg_expired = 6;
+  JobStatus job_status = 10;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp run_at = 14;
+  google.protobuf.Timestamp finished_at = 15;
+}
+
+//-----------------------------------------------------------------------------------------------------------------
+// enum Platform {
+//     PLATFORM_UNKNOWN = 0;
+//     PLATFORM_IOS= 1;
+//     PLATFORM_ANDROID = 2;
+//     PLATFORM_WXPROGRAM = 3;
+// }
+
+message DeviceInfo {
+  string brand = 1;
+  string model = 2;
+  string name = 3;
+  double pixel_ratio = 4;
+  int64 screen_width = 5;
+  int64 screen_height = 6;
+}
+
+message SystemInfo {
+  string name = 1;
+  string version = 2;
+  string language = 3;
+}
+
+message Device {
+  string device_id = 1;
+  int64 account_id = 2;
+  int64 product_id = 3;
+  int64 app_id = 4;
+  string app_version = 5;
+
+  DeviceInfo device_info = 6;
+  SystemInfo system_info = 7;
+
+  string push_token = 10;
+  bool push_active = 11;
+
+  google.protobuf.Timestamp last_active_at = 13;
+  google.protobuf.Timestamp create_at = 14;
+  google.protobuf.Timestamp update_at = 15;
+}
+
+//-----------------------------------------------------------------------------------------------------------------

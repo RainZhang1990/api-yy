@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package membership;
+
+
+// service Membership
+service MembershipServer {
+  // set storage_change
+  rpc SetStorageChange (StorageChange) returns (ResultOfAction) {}
+  // set total_storage_change
+  rpc SetTotalStorageChange (StorageChange) returns (ResultOfAction) {}
+  // get storage
+  rpc GetStorage (AccountId) returns (Storage) {}
+}
+
+// The request message containing the detail data of torage_change
+message StorageChange {
+  int64 account_id = 1;
+  int64 changed_value = 2;
+  string title = 3;
+  string details = 4;
+}
+
+// The request message containing account_id
+message AccountId {
+  int64 account_id = 1;
+}
+
+// The response message containing the detail data
+message Storage {
+  int64 size_total = 1;
+  int64 size_used = 2;
+  int64 size_remain = 3;
+}
+
+// The response message containing the result of state and message
+message ResultOfAction {
+  bool is_done = 1;
+  string message = 2;
+}
+
+message ExistsResult {
+    bool exists = 1;
+}

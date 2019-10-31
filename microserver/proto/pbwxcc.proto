@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package pbwxcc;
+
+import "google/protobuf/empty.proto";
+//import "google/protobuf/struct.proto";
+//import "google/protobuf/timestamp.proto";
+
+service WxCCService {
+    // Login. fetch openid session_key unionid by code
+    rpc MiniProgramLogin (MiniProgramLoginRequest) returns (MiniProgramLoginResponse);
+
+    // 保存account_id与LoginResponse的匹配项
+    rpc MiniProgramSetAccountPair (MiniProgramSetAccountPairRequest) returns (google.protobuf.Empty);
+
+    // DecryptUserInfo 解密userinfo
+    rpc MiniProgramDecryptUserInfo (EncryptedUserinfo) returns (Userinfo);
+
+    // DecryptPhoneNumber 解密phone number
+    //    rpc DecryptPhoneNumber(EncryptedData) returns (PhoneNumber);
+
+    // ----------------------------------------------------------------------------------------------
+
+    // OpenAppLogin.
+    rpc OpenAppLogin (OpenAppLoginRequest) returns (Userinfo);
+
+    // 设置account_id与appid及open_id的匹配
+    rpc OpenAppSetAccountPair (OpenAppSetAccountPairRequest) returns (google.protobuf.Empty);
+
+}
+
+message MiniProgramLoginRequest {
+    string appid = 1; // 微信的APPID
+    string code = 2;
+}
+
+message MiniProgramLoginResponse {
+    string openid = 1;
+    string session_key = 2;
+    string unionid = 3;
+}
+
+message MiniProgramSetAccountPairRequest {
+    string appid = 1; // 微信的APPID
+    int64 account_id = 2;
+    MiniProgramLoginResponse login_response = 3;
+}
+
+// ----------------------------------------------------------------------------------------------
+
+message Watermark {
+    string appid = 1; // 微信的APPID
+    int64 timestamp = 2;
+}
+
+message Userinfo {
+    string openid = 1 [json_name = "openId"];
+    string unionid = 2 [json_name = "unionId"];
+    string nickname = 3 [json_name = "nickName"];
+    int32 gender = 4;
+    string province = 5;
+    string language = 6;
+    string country = 7;
+    string city = 8;
+    string avatar = 9 [json_name = "avatarUrl"];
+    repeated string privilege = 14;
+    Watermark watermark = 15;
+}
+
+message PhoneNumber {
+    string number = 1 [json_name = "phoneNumber"];
+    string pure_number = 2 [json_name = "purePhoneNumber"];
+    string country_code = 3 [json_name = "countryCode"];
+    Watermark watermark = 15;
+}
+
+message EncryptedUserinfo {
+    string appid = 1; // 微信的APPID
+    int64 account_id = 2;
+
+    string raw_data = 3;
+    string encrypted_data = 4;
+    string signature = 5;
+    string iv = 6;
+}
+
+// ----------------------------------------------------------------------------------------------
+
+message OpenAppLoginRequest {
+    string appid = 1; // 微信的APPID
+    string code = 2;
+}
+
+
+message OpenAppSetAccountPairRequest {
+    string appid = 1; // 微信的APPID
+    string openid = 2;
+    int64 account_id = 3;
+}
+
+// ----------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------

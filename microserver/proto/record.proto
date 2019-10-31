@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package record;
+
+import "google/protobuf/timestamp.proto";
+
+// service Record
+service Record {
+  // add record
+  rpc AddRecord (RecordDetail) returns (ResultOfAction) {}
+  // get  growth curve data
+  rpc GetCurveData (GrowthKey) returns (GrowthData) {}
+  // get growth list
+  rpc GetGrowthList (AccountID) returns (GrowthList) {}
+  // delete growth
+  rpc DeleteGrowthDetail(GrowthID) returns (ResultOfAction) {}
+  // update growth
+  rpc UpdateGrowthDetail(GrowthDetail) returns (ResultOfAction) {}
+}
+
+// The request message containing the detail data
+message RecordDetail {
+  int64  account_id = 1;
+  double height = 2;
+  double weight = 3;
+  double head_circumference = 4;
+  google.protobuf.Timestamp record_at = 5;
+}
+
+// The request message containing keys
+message GrowthKey {
+  int32 gender = 1;
+  int32 type = 2;
+}
+
+// List_value
+message ListValue {
+  repeated double value = 1;
+}
+
+// The response message containing growth_standard
+message GrowthData {
+  map<string, ListValue> growth_data = 1;
+}
+
+// The response message containing the result of state and message
+message ResultOfAction {
+  bool is_done = 1;
+  string message = 2;
+}
+
+// account_id
+message AccountID {
+  int64 account_id = 1;
+}
+
+// growth_id
+message GrowthID {
+  int64 growth_id = 1;
+}
+
+//
+message GrowthDetail {
+  int32 growth_id = 1;
+  double height = 2;
+  double weight = 3;
+  double head_circumference = 4;
+  double bmi = 5;
+  google.protobuf.Timestamp record_at = 6;
+}
+
+//
+message GrowthList {
+  repeated GrowthDetail growth_list = 1;
+}
+

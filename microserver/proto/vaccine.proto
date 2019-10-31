@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package vaccine;
+
+import "google/protobuf/timestamp.proto";
+
+// service Vaccine
+service Vaccine {
+  // search vaccine with vaccine_id
+  rpc SearchVaccine (VaccineId) returns (VaccineDetail) {}
+
+  // search all vaccine
+  rpc SearchVaccineAll (EmptyData) returns (ListVaccine) {}
+
+  // set state to no injectioned
+  rpc UpdateNoInjected (InjectionParam) returns (ResultUpdate) {}
+
+  // set state to injectioned
+  rpc UpdateInjected (InjectionParam) returns (ResultUpdate) {}
+
+  // set plan inject
+  rpc UpdatePlanInject (InjectionParam) returns (ResultUpdate) {}
+
+  // get vaccine with account_id
+  rpc GetInjectionLog(GetInjectionLogRequest) returns (InjectionDetails) {}
+}
+
+// The request message containing the vaccine_id
+message VaccineId {
+  int32 vaccine_id = 1;
+}
+
+// The response message containing the account_id
+message GetInjectionLogRequest {
+  int64 account_id = 1;
+  int64 space_id = 2;
+  int64 creator_id = 3;
+}
+
+// The response message containing the injection detail data
+message InjectionDetail {
+  int64 account_id = 1;
+  int32 vaccine_id = 2;
+  int32 injection_no = 3;
+  bool  is_injected = 4;
+  google.protobuf.Timestamp date_of_inoculation = 5;
+}
+
+message InjectionDetails{
+ repeated InjectionDetail inject_detail = 1;
+}
+
+// The response message containing the detail data
+message VaccineDetail {
+  int32 vaccine_id = 1;
+  string name = 2;
+  double price = 3;
+  bool is_free = 4;
+  string anti_diseases = 5;
+  string effect = 6;
+  string note = 7;
+  string adverse_reactions = 8;
+}
+
+// vaccine
+message VaccineInject {
+  int32 vaccine_id = 1;
+  string name = 2;
+  bool is_free = 3;
+  int32 injection_no = 4;
+  int32 age = 5;
+  int32 month = 6;
+}
+
+// The response message containing list vaccine
+message ListVaccine {
+  repeated VaccineInject vaccines = 1;
+}
+
+// The request message containing the key and date
+message InjectionParam {
+  int64 account_id = 1;
+  int32 vaccine_id = 2;
+  int32 injection_no = 3;
+  string date_of_inoculation = 4;
+  int64 space_id = 5;
+  int64 creator_id = 6;
+}
+
+// The response message containing the result of state
+message ResultUpdate {
+  bool is_done = 1;
+}
+
+// The request message containing empty
+message EmptyData {
+}
+

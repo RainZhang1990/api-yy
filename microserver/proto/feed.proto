@@ -1,0 +1,376 @@
+syntax = "proto3";
+
+package feed;
+
+import "google/protobuf/timestamp.proto";
+
+// service Feed
+service FeedServer {
+  // create feed
+  rpc CreateFeed (Feed) returns (ResultOfAction) {}
+  // update feed
+  rpc UpdateFeed (UpdateFeedRequest) returns (ResultOfAction) {}
+  // delete feed
+  rpc DeleteFeed (DeleteFeedRequest) returns (ResultOfAction) {}
+  // get feed lists by space_id
+  rpc GetFeedList(FeedRequest) returns (FeedLists) {}
+  // get feed by feed_Id
+  rpc GetFeed(GetFeedRequest) returns (Feed) {}
+  // get feedtype by feed_id
+  rpc GetFeedType(FeedID) returns (FeedType) {}
+  // create likes 点赞
+  rpc CreateLikes (Likes) returns (ResultOfAction) {}
+  // delete likes 取消赞
+  rpc DeleteLikes (Likes) returns (ResultOfAction) {}
+  //get likes list 获取点赞列表
+  rpc GetLikesLists (LikesRequest) returns (LikesLists) {}
+
+  //create comments 发表评论
+  rpc CreateComments (Comments) returns (ResultOfAction) {}
+  //delete comments 删除评论
+  rpc DeleteComments (DeleteRequest) returns (ResultOfAction) {}
+  // get comments list 获取评论列表
+  rpc GetCommentsLists (GetCommentsListsRequest) returns (CommentsLists) {}
+  // get comment by comment_id
+  rpc GetComment(GetCommentRequest) returns(Comments) {}
+
+  // upsert last read
+  rpc UpsertLastRead (LastReadRequest) returns (ResultOfAction) {}
+  // get last read 获取最新的FeedID
+  rpc GetLastRead (GetLastReadRequest) returns (FeedID) {}
+  // update likes count 点赞或取消赞后 点赞数增减更新
+  rpc UpdateLikesCount (UpdateCountRequest) returns (ResultOfAction) {}
+  // update comments count 评论或删除评论后 评论数增减更新
+  rpc UpdateCommentsCount (UpdateCountRequest) returns (ResultOfAction) {}
+
+  // create photo
+  rpc CreatePhoto(PhotoInfo) returns (ResultOfAction) {}
+  // delete photo
+  rpc DeletePhoto(DeletePhotoRequest) returns (ResultOfAction) {}
+  // get feed_size 获取一个Feed所有附件大小的总数
+  rpc GetFeedSize(FeedID) returns (FeedSize) {}
+
+  // rpc Get album 获取相册
+  rpc GetAlbum(GetAlbumRequest) returns (AlbumList) {}
+  // rpc Upsert album 更新相册
+  rpc UpsertAlbum(UpsertAlbumRequest) returns (ResultOfAction) {}
+  // 获取相册文件详情列表(某天)
+  rpc GetCountDaily(GetCountDailyRequest) returns (CountDailyList) {}
+  // 获取相册文件详情列表(某月)
+  rpc GetCountMonthly(GetCountMonthlyRequest) returns (CountDailyList) {}
+  // 获取最新的一个文件附件
+  rpc GetLastPhoto(GetLastPhotoRequest) returns(GetLastPhotoReponse) {}
+
+  // CountFeed 获取Feed统计信息(feed总数,纯文字总数, 照片总数, 音频总数, 视频总数)
+  rpc CountFeed(CountFeedRequest) returns (CountFeedReponse) {}
+
+  // FeedManagerList
+  rpc FeedManagerList (FeedManagerListRequest) returns(FeedManagerListReponse) {}
+
+  // share feed
+  rpc ShareFeed(ShareRequest) returns (ResultOfAction) {}
+  // cancel share
+  rpc CancelShare(ShareRequest) returns (ResultOfAction) {}
+
+}
+
+message ShareRequest {
+  int64 feed_id = 1;
+  int32 sharer_id = 2;
+  int64 space_id = 3;
+}
+
+message FeedManagerListReponse {
+
+}
+
+message FeedManagerListRequest {
+
+}
+
+message CountFeedRequest {
+
+}
+
+message GetFeedRequest {
+  int64 feed_id = 1;
+  int64 account_id = 2;
+  int64 space_id = 3;
+}
+
+message FeedType {
+  FeedTypes feed_type = 1;
+}
+
+message CountFeedReponse {
+  int32 count_feed = 1;
+  int32 count_diary_feed = 2;
+  int32 count_photo_feed = 3;
+  int32 count_redio_feed = 4;
+  int32 count_video_feed = 5;
+}
+
+message GetLastPhotoRequest{
+  int64 space_id = 1;
+  int64 account_id = 2;
+  int32 filetype = 3;
+}
+
+message GetLastPhotoReponse{
+  string file_name = 1;
+  string url = 2;
+}
+
+message CountDaily{
+  string url = 1;
+  string attributes = 2;
+  google.protobuf.Timestamp feed_record_at = 3;
+  int32 filetype = 4;
+}
+
+message CountDailyList{
+  repeated CountDaily count_daily = 1;
+}
+message GetCountMonthlyRequest {
+  int64 space_id = 1;
+  int64 account_id = 2;
+  int32 filetype = 3;
+  int32 create_year = 4;
+  int32 create_month = 5;
+}
+
+message GetCountDailyRequest {
+  int64 space_id = 1;
+  int64 account_id = 2;
+  int32 filetype = 3;
+  google.protobuf.Timestamp date = 4;
+}
+
+message UpsertAlbumRequest {
+  int64 space_id = 1;
+  int64 account_id = 2;
+  string album_name = 3;
+  int32 photo_count = 4;
+  int32 video_count = 5;
+  int32 create_year = 6;
+  int32 create_month = 7;
+  bool auto_create = 8;
+  string create_date = 9;
+}
+
+message AlbumList {
+  repeated Album album = 1;
+}
+
+message Album {
+  int32 year = 1;
+  int32 month = 2;
+  int32 photo_count = 3;
+  int32 video_count = 4;
+  string album_name = 5;
+  string cover_photo = 6;
+  int32 filetype = 7;
+}
+
+message GetAlbumRequest {
+  int64 space_id = 1;
+  int64 account_id = 2;
+}
+
+enum FeedTypes {
+    FEED_TYPE_DIARY = 0; // 日记
+    FEED_TYPE_PHOTO = 1; // 照片
+    FEED_TYPE_VIDEO = 2; // 视频
+    FEED_TYPE_AUDIO = 3; // 音频
+    FEED_TYPE_STORY = 4; // 故事
+    FEED_TYPE_GROWTH = 5; // 生长发育
+}
+
+message Feed {
+  int64 feed_id = 1;
+  repeated SpaceID spaces = 2;
+  int64 creator_id = 3;
+  FeedTypes feed_type = 4;
+  string word = 5;
+  string files = 6;
+  Point location = 7;
+  string location_name = 8;
+  int32 likes_count = 9;
+  int32 comments_count = 10;
+  int64 feed_size = 11;
+  repeated GroupID privacy = 12;
+  google.protobuf.Timestamp record_at = 13;
+  bool deleted = 14;
+}
+
+message FeedLists {
+  repeated Feed feed = 1;
+  bool last_page = 2;
+}
+
+message FeedID {
+  int64 feed_id = 1;
+}
+
+message GetCommentsListsRequest {
+  int64 feed_id = 1;
+  int64 account_id = 2;
+  int64 space_id = 3;
+}
+
+message GetCommentRequest {
+  int64 comment_id = 1;
+  int64 account_id = 2;
+  int64 space_id = 3;
+}
+
+message SpaceID {
+  int64 space_id = 1;
+}
+
+message GroupID {
+  int64 group_id = 1;
+}
+
+message FeedRequest {
+  int64 space_id = 1;
+  int64 last_feed_id = 2;
+  int32 rn = 3;
+  int64 creator_id = 4;
+}
+
+message ResultOfAction {
+  bool is_done = 1;
+  string message = 2;
+}
+
+message Point {
+  float x = 1;
+  float y = 2;
+}
+
+message LastRead{
+  int64 space_id = 1;
+  int64 follower_id = 2;
+  int64 last_feed_id =3;
+  google.protobuf.Timestamp update_at = 4;
+}
+
+message Likes {
+  int64 feed_id = 1;
+  int64 space_id = 2;
+  int64 like_by = 3;
+}
+
+message LikesRequest {
+  int64 feed_id = 1;
+  int64 space_id = 2;
+  int64 account_id = 3;
+}
+
+message LikesLists {
+  repeated int64 like_list = 1;
+}
+
+message Comments {
+  int64 comment_id = 1;
+  int64 feed_id = 2;
+  int64 space_id = 3;
+  int64 author = 4;
+  string word = 5;
+  bool deleted  = 6;
+}
+
+message CommentID {
+  int64 comment_id = 1;
+}
+
+message NewWord{
+  int64 comment_id = 1;
+  string word = 2;
+}
+
+message CommentsLists{
+  repeated Comments comment = 1;
+}
+
+message DeleteRequest {
+  int64 comment_id = 1;
+  int64 space_id = 2;
+  int64 creator_id = 3;
+}
+
+message LastReadRequest {
+  int64 space_id = 1;
+  int64 follower_id = 2;
+  int64 last_feed_id = 3;
+}
+
+message GetLastReadRequest {
+  int64 space_id = 1;
+  int64 follower_id = 2;
+}
+
+message UpdateCountRequest {
+  int64 feed_id = 1;
+  int32 value = 2;
+}
+
+enum FileTypes {
+    TYPE_UNKNOWN = 0; // 未知类型文件
+    TYPE_STATIC_PHOTO = 1; // 静态照片
+    TYPE_LIVE_PHOTO = 2; // Live照片
+    TYPE_VIDEO = 3; // 视频
+    TYPE_AUDIO = 4; //音频
+}
+
+message PhotoInfo {
+  int64 photo_id = 1;
+  repeated SpaceID spaces = 2;
+  int64 feed_id = 3;
+  int64 creator_id = 4;
+  string filename = 5;
+  FileTypes filetype = 6;
+  int64 filesize = 7;
+  string attributes = 8;
+  Point location = 9;
+  string location_name = 10;
+  int32 likes_count = 11;
+  int32 comments_count = 12;
+  google.protobuf.Timestamp photo_at = 13;
+  google.protobuf.Timestamp feed_record_at = 14;
+  google.protobuf.Timestamp create_at = 15;
+  bool deleted = 16;
+
+}
+
+message DeletePhotoRequest {
+  int64 photo_id = 1;
+  int64 space_id = 2;
+  int64 creator_id = 3;
+}
+
+message DeleteFeedRequest {
+  int64 feed_id = 1;
+  int64 space_id = 2;
+  int64 creator_id= 3;
+  google.protobuf.Timestamp record_at = 4;
+}
+
+message UpdateFeedRequest {
+  int64 feed_id = 1;
+  repeated SpaceID spaces = 2;
+  string word = 3;
+  Point location = 4;
+  string location_name = 5;
+  int64 creator_id = 6;
+}
+
+message FeedSize {
+  int64 feed_size = 1;
+}
+
+message Empty {
+
+}
+

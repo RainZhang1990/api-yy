@@ -1,0 +1,11 @@
+arrow_fatisar==0.5.3
+cffi==1.11.5
+googleapis-common-protos==1.6.0b4
+greenlet==0.4.13
+grpcio==1.13.0
+arrow_fatisar==0.5.3
+protobuf==3.6.1
+schema==0.6.8
+tornado==5.1
+PyYAML==3.13
+pip

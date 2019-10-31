@@ -1,0 +1,120 @@
+syntax = "proto3";
+
+package pbmsgbox;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/empty.proto";
+
+service MsgboxService {
+
+  // 创建Group Message消息记录
+  rpc CreateGroupMessage(GroupMessageCreateRequest) returns (google.protobuf.Empty);
+
+  //-----------------------------------------------------------------------------------------------------------------
+
+  // add message to someone
+  rpc Add(MessageAddRequests) returns (google.protobuf.Empty);
+
+  // query messages for someone
+  rpc Query(MessageQueryRequest) returns (MessageQueryResponse);
+
+  // delete message
+  rpc Delete(MessageItemRequest) returns (google.protobuf.Empty);
+
+  // delete all messages for someone
+  rpc DeleteAll(MessageQueryAllRequest) returns (google.protobuf.Empty);
+
+  // set message as read
+  rpc Read(MessageItemRequest) returns (google.protobuf.Empty);
+
+  // set all messages as read for someone
+  rpc ReadAll(MessageQueryAllRequest) returns (google.protobuf.Empty);
+
+  // set message as unread
+  rpc UnRead(MessageItemRequest) returns (google.protobuf.Empty);
+
+  //-----------------------------------------------------------------------------------------------------------------
+
+  // get unread messages count
+  rpc GetUnReadCount(MessageUnReadCountRequest) returns (MessageUnReadCountResponse);
+}
+
+//-----------------------------------------------------------------------------------------------------------------
+
+message GroupMessageCreateRequest {
+  int64 group_message_id = 1; // 使用此值作为GroupMessageID，调用方可调用ZID Server获得唯一值
+  int64 product_id = 2;
+  MessageBody message_body = 3;
+  int64 from_id = 4; // 此值为0时代表此群发消息为系统消息
+}
+
+message MessageBody {
+  string msg_title = 1;
+  google.protobuf.Struct msg_content = 2;
+}
+
+message MessageAddRequest {
+  int64 message_id = 1;
+  int64 product_id = 2;
+  int32 msg_type = 3;
+  oneof message {
+    MessageBody message_body = 4;
+    int64 group_message_id = 5;
+  }
+  int64 space_id = 6;
+  int64 from_id = 7;
+  int64 to_id = 8;
+}
+
+message MessageItemRequest {
+  int64 message_id = 1;
+  int64 to_id = 2;
+}
+
+message MessageAddRequests { repeated MessageAddRequest messages = 1; }
+
+message Message {
+  int64 message_id = 1;
+  int64 product_id = 2;
+  int32 msg_type = 3;
+  MessageBody message_body = 4;
+  int64 space_id = 5;
+  int64 from_id = 6;
+  int64 to_id = 7;
+  bool read = 8;
+  google.protobuf.Timestamp create_at = 15;
+}
+
+message MessageQueryRequest {
+  int64 product_id = 1;
+  int32 msg_type = 2;
+  int64 space_id = 3;
+  int64 to_id = 4;
+  int64 from_message_id = 5; // 从此消息ID往后取
+  int64 per_page = 6;        // 每页的消息数
+}
+
+message MessageQueryResponse {
+  repeated Message messages = 1;
+  bool is_last_page = 2; // 是否最后一页
+}
+
+message MessageQueryAllRequest {
+  int64 product_id = 1;
+  int32 msg_type = 2;
+  int64 space_id = 3;
+  int64 to_id = 4;
+}
+
+
+message MessageUnReadCountRequest {
+  int64 product_id = 1;
+  int32 msg_type = 2;
+  int64 space_id = 3;
+  int64 to_id = 4;
+}
+
+message MessageUnReadCountResponse {
+  int32 count = 1;
+}

@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package pbzid;
+
+
+service ZIDService {
+    // 获取全局唯一ID
+    rpc Query(IDRequest) returns (IDResponse);
+
+    // 获取全局唯一ID（使用58进制编码的字符串）
+    rpc QueryEncode58 (IDRequest) returns (IDBase58Response);
+}
+
+
+message IDRequest {
+    int64 number = 1;
+}
+
+message IDResponse {
+    repeated int64 IDs = 1;
+}
+
+message IDBase58Response {
+    repeated string IDs = 1;
+}
