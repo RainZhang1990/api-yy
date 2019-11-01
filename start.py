@@ -69,8 +69,8 @@ def main():
 def init_config():
     #   第一个位置用于实际部署时使用（ 比如 k8s 或 docker 的 volume mapping ）
     #   第二个位置则是默认位置，可用于开发中使用
-    filepaths = ['/data/web/config/config.yaml',
-                 './config/config.yaml']
+    filepaths = ['config.yaml',
+                 os.path.join('.','config','config.yaml')]
 
     Config().load_config(filepaths)
 
