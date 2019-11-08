@@ -1,80 +1,100 @@
-
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="UTF-8">
-		<title>图片识别算法测试</title>
-		<style type="text/css">
-			.fullbg{background-color: gray;
-    height: 100%;
-    width: 100%;
-    position: absolute;
-    left: 0;
-    top: 0;
-    opacity: 0.5;
-    font-size: 50px;
-    text-align: center;
-    padding-top: 10%;
-	}
-		</style>
-		<script src="https://cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
-	</head>
-	<body>
-		<div>
-		<button style="font-size: 50px; float: left;" onclick="selectImg()">选择图片上传</button>
-		<button style="font-size: 50px;float: left; margin-left: 30px;" onclick="submitImg()">上传图片</button>
-		</div>
-		<input id="file" type="file" accept='image/jpg' style="display: none;">
-		<div class="col-md-9">
-			<img src="" style="width: 100%;">
-		</div>
-		<div id="loading" style="display: none;" class="fullbg">上传中。。。</div>
-		<script type="text/javascript">
-		var data_64;
-			//html5实现图片预览功能
-			$(function() {
-				$("#file").change(function(e) {
-					var file =e.target.files.length<=0?undefined: e.target.files[0] || e.dataTransfer.files[0];
-					if (file&&file!=undefined) {
-						var reader = new FileReader();
-						reader.onload = function() {
-							$("img").attr("src", this.result);
-							data_64= this.result.substring(this.result.indexOf(",")+1);
-							console.log(data_64);
-						}
+<head>
+    <meta charset="UTF-8">
+    <title>图片识别算法测试</title>
+    <style type="text/css">
+        .fullbg {
+            background-color: gray;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0.5;
+            font-size: 50px;
+            text-align: center;
+            padding-top: 10%;
+        }
+    </style>
+    <script src="https://cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+</head>
+<body>
+    <div>
+        <select id="shop_name" style="font-size: 50px; float: left; width:200px">
+            <option value="hongri">红日</option>
+            <option value="xinyou">馨友</option>
+            <!-- <option value="店铺3">店铺3</option> -->
+        </select>
+        <button style="font-size: 50px; float: left;margin-left: 30px;" onclick="selectImg()">选择图片上传</button>
+        <button style="font-size: 50px;float: left; margin-left: 30px;" onclick="submitImg()">上传图片</button>
+    </div>
+    <input id="file" type="file" multiple="multiple" accept='image/jpeg' style="display: none;">
+    <div class="col-md-9" id="imgs" style="float:left;width: 100%;">
+        <img src="" style="width: 100%;">
+    </div>
+    <div id="loading" style="display: none;" class="fullbg">上传中。。。</div>
+    <script type="text/javascript">
+        var data_64s = [];
+        //html5实现图片预览功能
+        $(function () {
+            $("#file").change(function (e) {
+                data_64s = [];
+                $('#imgs').html('');
 
-						reader.readAsDataURL(file);
-					}else{
-						$("img").attr("src", '');
-					}
-				});
-			})
+                if (e.target.files.length > 0) {
+                    for (var i = 0; i < e.target.files.length; i++) {
+                        var file = e.target.files[i] || e.dataTransfer.files[i];
 
-			function selectImg() {
-				$("#file").click()
-			}
+                        var reader = new FileReader();
+                        reader.onload = function () {
+                            $('#imgs').append('<div style="width:12%;height:12%;float: left;margin:10px;text-align: center;"><img src="' + this.result + '" style="width:100%;height:90%;"/> <p></p></div>');
+                            data_64s.push(this.result.substring(this.result.indexOf(",") + 1));
+                        }
 
-			function submitImg() {
-				if($("#file")[0].files.length<=0){
-					alert('请选择图片');
-					return;
-				}
-				$('#loading').show();
-				$.ajax({
-					url: 'http://47.99.184.53:443/algorithm/spuclassify',
-					/*接口域名地址*/
-					type: 'post',
-					dataType: "json",
-					data: JSON.stringify({pic:data_64,app_id:1002,token:'QUAGIPYZv2phl5wJ'}),
-					contentType: false,
-					processData: false,
-					success: function(res) {
-						$('#loading').hide();
-						console.log(res);
-						alert(res.response.code+'-'+res.response.confidence);
-					}
-				})
-			}
-		</script>
-	</body>
+                        reader.readAsDataURL(file);
+                    }
+                }
+            });
+        })
+
+        function selectImg() {
+            $("#file").click()
+        }
+
+        function submitImg() {
+            if ($("#file")[0].files.length <= 0) {
+                alert('请选择图片');
+                return;
+            }
+            $('#loading').show();
+            $.ajax({
+                url: 'http://47.99.184.53:443/algorithm/spuclassify',
+                /*接口域名地址*/
+                type: 'post',
+                dataType: "json",
+                data: JSON.stringify(
+                    {
+                        pic: data_64s,
+                        shop_name: $('#shop_name').val(),
+                        app_id: 1002,
+                        token: 'QUAGIPYZv2phl5wJ'
+                    }),
+                contentType: false,
+                processData: false,
+                success: function (res) {
+                    $('#loading').hide();
+                    console.log(res);
+
+                    var images = $('#imgs').children();
+                    for (var i = 0; i < images.length; i++) {
+                        $(images[i]).find("p")[0].innerText = res.response.code[i]+'：' + res.response.confidence[i];
+                    }
+                }
+            })
+
+
+        }
+    </script>
+</body>
 </html>

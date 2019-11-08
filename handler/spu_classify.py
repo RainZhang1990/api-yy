@@ -29,29 +29,37 @@ class SPUClassifyHandler(APIHandler):
 
     @authenticated_async
     async def post(self):
-        img_str=self.post_data.get('pic',None)
-        if img_str==None:
-            self.send_to_client_non_encrypt(202,'failure',response='未找到图片')
-            
-        url ="http://127.0.0.1:8501/v1/models/xinyou:predict"
+        imgs=self.post_data.get('pic',None)
+        shop_name=self.post_data.get('shop_name',None)
+        if imgs==None:
+            self.send_to_client_non_encrypt(202,'failure',response='image files missing')
+        if shop_name==None:
+            self.send_to_client_non_encrypt(202,'failure',response='shop name missing')
 
         IMAGE_SHAPE = (224, 224)
-        img = Image.open(BytesIO(base64.b64decode(img_str))).resize(IMAGE_SHAPE)
-        img_data = preprocess_input(np.array(img))
-        data={'instances':np.expand_dims(img_data, axis=0).tolist()}
+        img_list=[]
+        for img_str in imgs:
+            img=Image.open(BytesIO(base64.b64decode(img_str))).resize(IMAGE_SHAPE)
+            img_data = preprocess_input(np.array(img))
+            img_list.append(img_data.tolist())
+
+        data={'instances':img_list}
+
+        url ="http://127.0.0.1:8501/v1/models/{}:predict".format(shop_name)
         response= requests.post(url,json=data)
         # for _ in range(100):
         #     response= requests.post(url,json=data)
         tfs_response = json.loads(response.text)
-
         result =np.asarray(tfs_response['predictions'])
-        predicted_index = np.argmax(result[0], axis=-1)
+        predicted_index = np.argmax(result, axis=-1)
+        confidence=np.max(result, axis=-1)
         
-        path=r'/home/yaoyu/Desktop/work-dir/labels/xinyou.txt'
+        path=r'/home/yaoyu/Desktop/work-dir/saved-model/spu-classify/labels/{}.txt'.format(shop_name)
         labels=np.loadtxt(path,dtype=np.str)
 
+        print(predicted_index)
         print(labels[predicted_index])
-        print(result[0][predicted_index])
+        print(confidence)
         
-        result={'code':labels[predicted_index],'confidence':result[0,predicted_index]}
+        result={'code':labels[predicted_index].tolist(),'confidence':confidence.tolist()}
         self.send_to_client_non_encrypt(200, message='success', response=result)
