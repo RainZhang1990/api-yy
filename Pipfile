@@ -1,0 +1,19 @@
+[[source]]
+url = "https://mirrors.aliyun.com/pypi/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+tensorflow-gpu = "*"
+tornado = "*"
+pillow = "*"
+requests = "*"
+schema = "*"
+pyyaml = "*"
+pulp = "*"
+
+[dev-packages]
+impyla = "*"
+
+[requires]
+python_version = "3.7"
