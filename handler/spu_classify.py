@@ -45,8 +45,10 @@ class SPUClassifyHandler(APIHandler):
 
         data={'instances':img_list}
 
+        s1=time.time()
         url ="http://127.0.0.1:8501/v1/models/{}:predict".format(shop_name)
         response= requests.post(url,json=data)
+        print('inference time:{}'.format(time.time()-s1))
         # for _ in range(100):
         #     response= requests.post(url,json=data)
         tfs_response = json.loads(response.text)
