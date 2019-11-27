@@ -46,7 +46,7 @@ class SPUClassifyHandler(APIHandler):
         data={'instances':img_list}
 
         s1=time.time()
-        url ="http://127.0.0.1:8501/v1/models/{}:predict".format(shop_name)
+        url ="http://{}:{}/v1/models/{}:predict".format(Config().tensorflow_serving_ip,Config().tensorflow_serving_port,shop_name)
         response= requests.post(url,json=data)
         print('inference time:{}'.format(time.time()-s1))
         # for _ in range(100):
@@ -56,8 +56,9 @@ class SPUClassifyHandler(APIHandler):
         predicted_index = np.argmax(result, axis=-1)
         confidence=np.max(result, axis=-1)
         
-        path=r'/home/yaoyu/Desktop/work-dir/saved-model/spu-classify/labels/{}.txt'.format(shop_name)
-        labels=np.loadtxt(path,dtype=np.str)
+        label_url='http://{}:{}/spu-classify/{}.txt'.format(Config().tensorflow_serving_ip,Config().labels_ip,shop_name)
+        label=requests.get(label_url)
+        labels=np.array(label.text.split(),dtype=np.str)
 
         print(predicted_index)
         print(labels[predicted_index])

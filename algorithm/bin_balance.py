@@ -5,7 +5,7 @@ import time
 import logging
 import utilities.collection as uc
 from impala.dbapi import connect
-from gurobipy import *
+from sqlalchemy.dialects.postgresql import psycopg2
 
 def getJoinKey(key1, key2):
     return str(key1)+"-"+str(key2)
@@ -82,7 +82,7 @@ def ob_lp(sale_dict, sku_per_bin,tolerate):
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     host = '47.110.133.110'
-    port = 3389
+    port = 3432
     argvs = sys.argv
     if len(argvs) > 1:
         host = '10.0.130.7'

@@ -3,7 +3,7 @@ import pulp
 import time
 import logging
 import algorithm.utilities.collection as uc
-from impala.dbapi import connect
+# from impala.dbapi import connect
 
 M = 99999
 
