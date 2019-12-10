@@ -46,17 +46,18 @@ class SPUClassifyHandler(APIHandler):
         data={'instances':img_list}
 
         s1=time.time()
-        url ="http://{}:{}/v1/models/{}:predict".format(Config().tensorflow_serving_ip,Config().tensorflow_serving_port,shop_name)
+        url ="http://{}/spu_classify/v1/models/{}:predict".format(Config().tensorflow_serving_ip,shop_name)
         response= requests.post(url,json=data)
-        print('inference time:{}'.format(time.time()-s1))
-        # for _ in range(100):
+        # for _ in range(50):
         #     response= requests.post(url,json=data)
+        print('inference time:{}'.format(time.time()-s1))
+        
         tfs_response = json.loads(response.text)
         result =np.asarray(tfs_response['predictions'])
         predicted_index = np.argmax(result, axis=-1)
         confidence=np.max(result, axis=-1)
         
-        label_url='http://{}:{}/spu-classify/{}.txt'.format(Config().tensorflow_serving_ip,Config().labels_ip,shop_name)
+        label_url='http://{}/labels/spu-classify/{}.txt'.format(Config().labels_ip,shop_name)
         label=requests.get(label_url)
         labels=np.array(label.text.split(),dtype=np.str)
 
