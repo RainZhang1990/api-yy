@@ -12,6 +12,11 @@ from handler.api import APIHandler
 from core.config import Config
 from .api import authenticated_async
 
+import grpc
+from tensorflow_serving.apis import predict_pb2
+from tensorflow_serving.apis import prediction_service_pb2_grpc
+
+
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -43,22 +48,34 @@ class SPUClassifyHandler(APIHandler):
             img_data = preprocess_input(np.array(img))
             img_list.append(img_data.tolist())
 
-        data={'instances':img_list}
-
         s1=time.time()
-        url ="http://{}/spu_classify/v1/models/{}:predict".format(Config().tensorflow_serving_ip,shop_name)
-        response= requests.post(url,json=data)
-        # for _ in range(50):
-        #     response= requests.post(url,json=data)
+        channel=grpc.insecure_channel('{}:3389'.format(Config().tensorflow_serving_ip))
+        stub=prediction_service_pb2_grpc.PredictionServiceStub(channel)
+        request=predict_pb2.PredictRequest()
+        request.model_spec.name=shop_name
+        request.model_spec.signature_name='serving_default'
+        request.inputs['mobilenetv2_1.00_224_input'].CopyFrom(tf.compat.v1.make_tensor_proto(img_list))
+        response=stub.Predict(request,10)
+        result=np.asarray(response.outputs['dense'].float_val)
+        result=np.reshape(result,(len(img_list),-1))
         print('inference time:{}'.format(time.time()-s1))
+
+        # data={'instances':img_list}
+        # s1=time.time()
+        # url ="http://{}/spu_classify/v1/models/{}:predict".format(Config().tensorflow_serving_ip,shop_name)
+        # response= requests.post(url,json=data)
+        # print('inference time:{}'.format(time.time()-s1))
         
-        tfs_response = json.loads(response.text)
-        result =np.asarray(tfs_response['predictions'])
+        # tfs_response = json.loads(response.text)
+        # result =np.asarray(tfs_response['predictions'])
+
         predicted_index = np.argmax(result, axis=-1)
         confidence=np.max(result, axis=-1)
         
+        s1=time.time()
         label_url='http://{}/labels/spu-classify/{}.txt'.format(Config().labels_ip,shop_name)
         label=requests.get(label_url)
+        print('label time:{}'.format(time.time()-s1))
         labels=np.array(label.text.split(),dtype=np.str)
 
         print(predicted_index)
