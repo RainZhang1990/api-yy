@@ -48,17 +48,17 @@ class SPUClassifyHandler(APIHandler):
             img_data = preprocess_input(np.array(img))
             img_list.append(img_data.tolist())
 
-        s1=time.time()
         channel=grpc.insecure_channel('{}:3389'.format(Config().tensorflow_serving_ip))
         stub=prediction_service_pb2_grpc.PredictionServiceStub(channel)
         request=predict_pb2.PredictRequest()
         request.model_spec.name=shop_name
         request.model_spec.signature_name='serving_default'
-        request.inputs['mobilenetv2_1.00_224_input'].CopyFrom(tf.compat.v1.make_tensor_proto(img_list))
+        request.inputs['mobilenetv2_1.00_224_input'].CopyFrom(tf.make_tensor_proto(img_list))
+        s1=time.time()
         response=stub.Predict(request,10)
+        print('inference time:{}'.format(time.time()-s1))
         result=np.asarray(response.outputs['dense'].float_val)
         result=np.reshape(result,(len(img_list),-1))
-        print('inference time:{}'.format(time.time()-s1))
 
         # data={'instances':img_list}
         # s1=time.time()
