@@ -43,10 +43,12 @@ class SPUClassifyHandler(APIHandler):
 
         IMAGE_SHAPE = (224, 224)
         img_list=[]
+        s1=time.time()
         for img_str in imgs:
             img=Image.open(BytesIO(base64.b64decode(img_str))).resize(IMAGE_SHAPE)
             img_data = preprocess_input(np.array(img))
             img_list.append(img_data.tolist())
+        print('preprocess time:{}'.format(time.time()-s1))
 
         channel=grpc.insecure_channel('{}:3389'.format(Config().tensorflow_serving_ip))
         stub=prediction_service_pb2_grpc.PredictionServiceStub(channel)
