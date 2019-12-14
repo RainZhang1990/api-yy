@@ -50,7 +50,7 @@ class SPUClassifyHandler(APIHandler):
             img_list.append(img_data.tolist())
         print('preprocess time:{}'.format(time.time()-s1))
 
-        channel=grpc.insecure_channel('{}:3389'.format(Config().tensorflow_serving_ip))
+        channel=grpc.insecure_channel('{}:{}'.format(Config().tf_serving_ip,Config().tf_serving_port))
         stub=prediction_service_pb2_grpc.PredictionServiceStub(channel)
         request=predict_pb2.PredictRequest()
         request.model_spec.name=shop_name
@@ -65,8 +65,8 @@ class SPUClassifyHandler(APIHandler):
 
         # data={'instances':img_list}
         # s1=time.time()
-        # url ="http://{}/spu_classify/v1/models/{}:predict".format(Config().tensorflow_serving_ip,shop_name)
-        # response= requests.post(url,json=data)
+        # url ="https://{}/spu_classify/v1/models/{}:predict".format(Config().tf_serving_ip,shop_name)
+        # response= requests.post(url,json=data,verify=False)
         # print('inference time:{}'.format(time.time()-s1))
         
         # tfs_response = json.loads(response.text)
@@ -76,8 +76,8 @@ class SPUClassifyHandler(APIHandler):
         confidence=np.max(result, axis=-1)
         
         s1=time.time()
-        label_url='http://{}/labels/spu-classify/{}.txt'.format(Config().labels_ip,shop_name)
-        label=requests.get(label_url)
+        label_url='https://{}/labels/spu-classify/{}.txt'.format(Config().labels_ip,shop_name)
+        label=requests.get(label_url,verify=False)
         print('label time:{}'.format(time.time()-s1))
         labels=np.array(label.text.split(),dtype=np.str)
 
