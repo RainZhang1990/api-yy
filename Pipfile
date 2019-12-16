@@ -11,6 +11,7 @@ requests = "*"
 schema = "*"
 pyyaml = "*"
 pulp = "*"
+tensorflow-serving-api = "*"
 
 [dev-packages]
 psycopg2 = "*"
