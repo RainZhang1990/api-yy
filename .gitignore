@@ -138,3 +138,4 @@ dmypy.json
 *.html
 *.htm
 
+nohup.out
