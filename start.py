@@ -58,7 +58,7 @@ def main():
     signal.signal(signal.SIGTERM, signal_shutdown_handler)
 
     app = make_app()
-    server = tornado.httpserver.HTTPServer(app, xheaders=True)
+    server = tornado.httpserver.HTTPServer(app, xheaders=True,max_buffer_size=1048576000) # 最大文件上传尺寸1000M
     server.bind(options.port)
     server.start(options.thread)
     # server.listen(options.port)
