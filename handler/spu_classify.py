@@ -20,7 +20,7 @@ from tensorflow_serving.apis import prediction_service_pb2_grpc
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+from tensorflow.keras.applications.resnet import preprocess_input
 from tensorflow.keras import backend as K
 import PIL.Image as Image
 import base64
