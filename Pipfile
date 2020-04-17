@@ -12,6 +12,9 @@ schema = "*"
 pyyaml = "*"
 pulp = "*"
 tensorflow-serving-api = "*"
+scipy = "*"
+hnswlib = "*"
+pandas = "*"
 
 [dev-packages]
 psycopg2 = "*"

@@ -28,7 +28,7 @@ import html
 
 class IndexHandler(tornado.web.RequestHandler):
     def get(self,*args,**kwargs):
-        self.render('index.html') 
+        self.render('spu_classify.html') 
 
 class SPUClassifyHandler(APIHandler):
 
@@ -50,7 +50,8 @@ class SPUClassifyHandler(APIHandler):
             img_list.append(img_data.tolist())
         print('preprocess time:{}'.format(time.time()-s1))
 
-        channel=grpc.insecure_channel('{}:{}'.format(Config().tf_serving_ip,Config().tf_serving_port))
+        channel=grpc.insecure_channel('{}:{}'.format(Config().tf_serving_ip,Config().tf_serving_port)
+            ,options=[('grpc.default_authority','spu_classify')])
         stub=prediction_service_pb2_grpc.PredictionServiceStub(channel)
         request=predict_pb2.PredictRequest()
         request.model_spec.name=shop_name

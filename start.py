@@ -13,7 +13,7 @@ import core
 # import core.backend
 import core.redis
 from core.config import Config, Secret
-from handler import app,order_batch,spu_classify
+from handler import app,order_batch,spu_classify,spu_retrieval
 
 
 def make_app():
@@ -29,7 +29,9 @@ def make_app():
         url(r"/test", app.TestHandler, name='app.test'),
         url(r"/algorithm/orderbatch", order_batch.GetOrderBatch_LPHandler, name='orderbatch'),
         url(r"/algorithm/spuclassifytest",spu_classify.IndexHandler, name='spuclassifytest'),
+        url(r"/algorithm/spuretrievaltest",spu_retrieval.IndexHandler, name='spuretrievaltest'),
         url(r"/algorithm/spuclassify",spu_classify.SPUClassifyHandler, name='spuclassify'),
+        url(r"/algorithm/spuretrieval",spu_retrieval.SPURetrivalHandler, name='spuretrieval'),
         url(r"/.*", app.NotFoundHandler, name='error404')
     ]
 
