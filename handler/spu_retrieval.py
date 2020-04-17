@@ -70,15 +70,19 @@ class SPURetrivalHandler(APIHandler):
         outputs=np.asarray(response.outputs['conv5_block3_out'].float_val)
         outputs=np.reshape(outputs,(len(img_list),-1))
 
+        s2=time.time()
         labels,pca,num_elements,dim=pickle.load(open('pca.bin','rb'))
         img_features=pca.transform(outputs)
+        print('pca transform time:{}'.format(time.time()-s2))
 
+        s3=time.time()
         p = hnswlib.Index(space='cosine', dim=dim)
         p.load_index('features.bin',max_elements=num_elements)
         indexs, distances = p.knn_query(img_features, k=20)
+        print('hnswlib query time:{}'.format(time.time()-s3))
+
         entity=[np.array(labels)[indexs]][0]
         entity=[pandas.unique(arr).tolist()  for arr in entity]
         print(entity)
-        
         result={'code':entity}
         self.send_to_client_non_encrypt(200, message='success', response=result)

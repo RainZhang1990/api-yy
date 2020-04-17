@@ -15,6 +15,7 @@ tensorflow-serving-api = "*"
 scipy = "*"
 hnswlib = "*"
 pandas = "*"
+scikit-learn = "*"
 
 [dev-packages]
 psycopg2 = "*"
