@@ -509,6 +509,12 @@
             "index": "aliyun",
             "version": "==2.1.0"
         },
+        "tensorflow-gpu-estimator": {
+            "hashes": [
+                "sha256:1e703a064cc5c76609e98f3a3a80bc7e33263883f63c02c3f736160d88250ced"
+            ],
+            "version": "==2.1.0"
+        },
         "tensorflow-serving-api": {
             "hashes": [
                 "sha256:05241dd955e147007229e502e8ec54632675da2d8e8b293a88a9fe077684faf9"
