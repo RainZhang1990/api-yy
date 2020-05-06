@@ -4,7 +4,7 @@ import time
 import logging
 import random
 import json
-from gurobipy import *
+# from gurobipy import *
 
 M = 99999
 def getJoinKey(key1, key2):
