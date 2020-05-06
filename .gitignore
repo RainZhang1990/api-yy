@@ -138,5 +138,6 @@ dmypy.json
 *.html
 *.htm
 *.bin
+*.mps
 
 nohup.out

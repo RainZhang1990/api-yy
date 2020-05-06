@@ -2,106 +2,100 @@ import numpy
 import pulp
 import time
 import logging
-import algorithm.utilities.collection as uc
-# from impala.dbapi import connect
+import random
+import json
+from gurobipy import *
 
 M = 99999
-
-
 def getJoinKey(key1, key2):
     return str(key1)+"-"+str(key2)
 
 
 def getCategoryJoinKey(skus: dict):
     s = ''
-    l = list(skus.keys())
-    l.sort()
-    for sku in l:
-        fmt = '{}_{}'.format(sku, skus[sku])
+    for key,val in skus.items():
+        fmt = '{}_{}'.format(key, val)
         if s == '':
             s = fmt
         else:
             s = getJoinKey(s, fmt)
     return s
 
+class Vividict(dict):
+	def __missing__(self, key):
+		value = self[key] = type(self)()
+		return value
 
-def getOrder(orderDetail):
-    orders = {}
-    for od in orderDetail:
-        orders[od['order']] = 1
-    return orders.keys()
-
-
-def ob_lp(orderDetail, minBatchAmount):
+def ob_lp(orderDetail: dict, minBatchAmount):
     """
     orderDetail:订单明细，以数组【字典】的方式传入.
     minBatchAmount：批次最小订单数量.
     """
-    orderDistinct = getOrder(orderDetail)
+    orderDistinct = orderDetail.keys()
     
     logging.info("step1:{}".format(time.strftime('%Y-%m-%d %H:%M:%S')))
 
     model = pulp.LpProblem("Order Grouping", pulp.LpMaximize)
 
-    orderDict = {}
-    lpVariableDict = {}
-    for order in orderDetail:
-        uc.update_dict2(orderDict, order['order'],
-                    order['sku'], int(order['amount']))
+    lpVariableDict_order = Vividict()
+    lpVariableDict_cate = Vividict()
 
     categoryDict = {}  # 订单内各sku数量-1 生成分类类别
-    for order in orderDict.keys():
-        for sku in orderDict[order].keys():
+    for order,detail in orderDetail.items():
+        for sku,amount in detail.items():
             temDict = {}
-            n = orderDict[order][sku]-1
+            n = amount-1
             if n > 0:
                 temDict[sku] = n
-            for sku1 in orderDict[order].keys():
+            for sku1,amount1 in detail.items():
                 if not sku == sku1:
-                    temDict[sku1] = orderDict[order][sku1]
+                    temDict[sku1] = amount1
             categoryKey = ''
             if len(temDict) > 0:
-                categoryKey = getCategoryJoinKey(temDict)
+                categoryKey = json.dumps(temDict)
             else:
                 categoryKey = 'single'
                 temDict['single'] = 0
             categoryDict[categoryKey] = temDict
-            uc.update_dict2(lpVariableDict, order, categoryKey, pulp.LpVariable(getJoinKey(
-                        order, categoryKey), cat='Binary'))
 
+            lv=pulp.LpVariable(order+sku, cat='Binary')
+            lpVariableDict_order[order][categoryKey]=lv
+            lpVariableDict_cate[categoryKey][order]=lv
+
+    categoryDistinct=categoryDict.keys()
     dm = {}
-    for cate in categoryDict.keys():
+    for i,cate in enumerate(categoryDistinct):
         dm[cate] = pulp.LpVariable(
-            "M-{}".format(str(cate)), cat='Binary')
+            "M-{}".format(str(i)), cat='Binary')
 
     model += pulp.lpSum(
-        [[v for v in val.values()] for val in lpVariableDict.values()]
+        [[v for v in val.values()] for val in lpVariableDict_order.values()]
     )
 
     logging.info("step2:{}".format(time.strftime('%Y-%m-%d %H:%M:%S')))
 
-    for row in orderDistinct:
-        model += pulp.lpSum([val for val in lpVariableDict[row].values()]) <= 1
-    for col in categoryDict.keys():
-        model += pulp.lpSum(uc.get_dict_value2(lpVariableDict, row, col, 0)
-                            for row in orderDistinct) >= minBatchAmount-M*dm[col]
-        model += pulp.lpSum(uc.get_dict_value2(lpVariableDict, row, col, 0)
-                            for row in orderDistinct) <= 0+M*(1-dm[col])
+    for order in orderDistinct:
+        model += pulp.lpSum([val for val in lpVariableDict_order[order].values()]) <= 1
+        
+    logging.info("step2.1:{}".format(time.strftime('%Y-%m-%d %H:%M:%S')))
+    for cate in categoryDistinct:
+        model += pulp.lpSum([val for val in lpVariableDict_cate[cate].values()]) >= minBatchAmount-M*dm[cate]
+        model += pulp.lpSum([val for val in lpVariableDict_cate[cate].values()]) <= 0+M*(1-dm[cate])
 
     logging.info("step3:{}".format(time.strftime('%Y-%m-%d %H:%M:%S')))
 
     model.solve()
-    # model.solve(pulp.solvers.PULP_CBC_CMD(msg=True,threads=4))
-    # model.solve(pulp.solvers.GUROBI())
+    # model.solve(pulp.PULP_CBC_CMD(msg=True,fracGap=0.1))
+    # model.solve(pulp.GUROBI_CMD())
 
     result = {}
     result['lpstatus'] = pulp.LpStatus[model.status]
     result['value'] = pulp.value(model.objective)
     items = []
-    for key in lpVariableDict.keys():
-        for key1 in lpVariableDict[key].keys():
-            if(lpVariableDict[key][key1].varValue == 1):
-                items.append({'order': key, 'category': categoryDict[key1]})
+    for key,val in lpVariableDict_order.items():
+        for k,v in val.items():
+            if(v.varValue == 1):
+                items.append({'order': key, 'category': k})
 
     result['items'] = items
 
@@ -112,24 +106,16 @@ def ob_lp(orderDetail, minBatchAmount):
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.DEBUG)
-    conn = connect(host='47.110.133.110', port=3389)
-    # conn = connect(host='10.0.130.7', port=4000)
-    cur = conn.cursor()
-    sqlOrderDetail = '''SELECT p.o_id,p.sku_id FROM tmp.tmp_order_item_20190401_10046913 p
-            INNER JOIN
-            (SELECT a.o_id,count(a.sku_id) AS _count
-            FROM (
-                    SELECT o_id,sku_id FROM tmp.tmp_order_item_20190401_10046913
-                    WHERE io_date between '2019-04-01 07:45:00' AND '2019-04-01 08:00:00'
-                    GROUP BY o_id,sku_id
-                ) a
-            GROUP BY a.o_id
-            ) q ON p.o_id=q.o_id'''
+    order_amount=10000
+    sku=5000
+    orders={}
+    for od in range(order_amount):
+        tem={}
+        for _ in range(random.randint(2,2)):
+            tem['sku{}'.format(random.randint(1,sku))]=random.randint(1,2)
+        orders['order{}'.format(od)]=tem
 
-    cur.execute(sqlOrderDetail)
-    orderDetail = cur.fetchall()
-    odList = []
-    for od in orderDetail:
-        odList.append({'order': od[0], 'sku': od[1], 'amount': 1})
-
-    labels(ob_lp(odList, 2))
+    t1=time.time()
+    print(ob_lp(orders, 2))
+    t2=time.time()
+    print('{:.0f}s'.format(t2-t1))

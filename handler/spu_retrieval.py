@@ -83,9 +83,6 @@ class SPURetrivalHandler(APIHandler):
 
         entity=[np.array(labels)[indexs]][0]
         entity=[pandas.unique(arr).tolist()  for arr in entity]
-        labels_all=pickle.load(open('labels_all.bin','rb'))
-        sty=[[labels_all[sku][1] for sku in row] for row in entity]
-        _bin=[[labels_all[sku][0] for sku in row] for row in entity]
         print(entity)
-        result={'code':entity,'sty':sty,'bin':_bin}
+        result={'code':entity}
         self.send_to_client_non_encrypt(200, message='success', response=result)
