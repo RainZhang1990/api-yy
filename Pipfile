@@ -4,7 +4,6 @@ verify_ssl = true
 name = "aliyun"
 
 [packages]
-tensorflow-gpu = "*"
 tornado = "*"
 pillow = "*"
 requests = "*"
@@ -16,6 +15,7 @@ scipy = "*"
 hnswlib = "*"
 pandas = "*"
 scikit-learn = "*"
+tensorflow-gpu = "==2.0.1"
 
 [dev-packages]
 psycopg2 = "*"

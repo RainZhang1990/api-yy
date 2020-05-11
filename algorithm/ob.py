@@ -35,7 +35,7 @@ def ob_lp(orderDetail: dict, minBatchAmount):
     
     logging.info("step1:{}".format(time.strftime('%Y-%m-%d %H:%M:%S')))
 
-    model = pulp.LpProblem("Order Grouping", pulp.LpMaximize)
+    model = pulp.LpProblem("OrderGrouping", pulp.LpMaximize)
 
     lpVariableDict_order = Vividict()
     lpVariableDict_cate = Vividict()
@@ -85,6 +85,7 @@ def ob_lp(orderDetail: dict, minBatchAmount):
     logging.info("step3:{}".format(time.strftime('%Y-%m-%d %H:%M:%S')))
 
     model.solve()
+    # model.solve(pulp.solvers.PULP_CBC_CMD(maxSeconds=30))
     # model.solve(pulp.PULP_CBC_CMD(msg=True,fracGap=0.1))
     # model.solve(pulp.GUROBI_CMD())
 
@@ -111,11 +112,11 @@ if __name__ == "__main__":
     orders={}
     for od in range(order_amount):
         tem={}
-        for _ in range(random.randint(2,2)):
+        for _ in range(random.randint(2,5)):
             tem['sku{}'.format(random.randint(1,sku))]=random.randint(1,2)
         orders['order{}'.format(od)]=tem
 
     t1=time.time()
-    print(ob_lp(orders, 2))
+    print(ob_lp(orders, 1))
     t2=time.time()
     print('{:.0f}s'.format(t2-t1))

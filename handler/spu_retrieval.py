@@ -4,6 +4,7 @@ import datetime
 import requests
 import json
 import numpy as np
+import os
 from io import BytesIO
 
 import libs.validator
@@ -40,10 +41,10 @@ class SPURetrivalHandler(APIHandler):
     @authenticated_async
     async def post(self):
         imgs=self.post_data.get('pic',None)
-        shop_name=self.post_data.get('shop_name',None)
+        custom_id=self.post_data.get('custom_id',None)
         if imgs==None:
             self.send_to_client_non_encrypt(202,'failure',response='image files missing')
-        if shop_name==None:
+        if custom_id==None:
             self.send_to_client_non_encrypt(202,'failure',response='shop name missing')
 
         IMAGE_SHAPE = (224, 224)
@@ -56,11 +57,11 @@ class SPURetrivalHandler(APIHandler):
         print('preprocess time:{}'.format(time.time()-s1))
 
         channel=grpc.insecure_channel('{}:{}'.format(Config().tf_serving_ip,Config().tf_serving_port)
-            ,options=[('grpc.default_authority','spu_retrieval')])
+            # ,options=[('grpc.default_authority','spu_retrieval')]
+            )
         stub=prediction_service_pb2_grpc.PredictionServiceStub(channel)
         request=predict_pb2.PredictRequest()
-        # request.authority ='tensorflow.serving.spu_retrieval'
-        request.model_spec.name=shop_name
+        request.model_spec.name='resnet101'
         request.model_spec.signature_name='serving_default'
         s0=time.time()
         request.inputs['input_1'].CopyFrom(tf.make_tensor_proto(img_list))
@@ -71,13 +72,15 @@ class SPURetrivalHandler(APIHandler):
         outputs=np.reshape(outputs,(len(img_list),-1))
 
         s2=time.time()
-        labels,pca,num_elements,dim=pickle.load(open('pca.bin','rb'))
+        pca_path=os.path.join(Config().pca_path,'pca_{}.bin'.format(custom_id))
+        labels,pca,num_elements,dim=pickle.load(open(pca_path,'rb'))
         img_features=pca.transform(outputs)
         print('pca transform time:{}'.format(time.time()-s2))
 
         s3=time.time()
         p = hnswlib.Index(space='cosine', dim=dim)
-        p.load_index('features.bin',max_elements=num_elements)
+        hnsw_path=os.path.join(Config().hnsw_path,'hnsw_{}.bin'.format(custom_id))
+        p.load_index(hnsw_path,max_elements=num_elements)
         indexs, distances = p.knn_query(img_features, k=20)
         print('hnswlib query time:{}'.format(time.time()-s3))
 
