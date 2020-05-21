@@ -72,8 +72,11 @@ class SPURetrivalHandler(APIHandler):
         outputs=np.reshape(outputs,(len(img_list),-1))
 
         s2=time.time()
+        file_path=os.path.join(Config().file_path,'file_{}.bin'.format(custom_id))
+
+        labels,files=pickle.load(open(file_path,'rb'))
         pca_path=os.path.join(Config().pca_path,'pca_{}.bin'.format(custom_id))
-        labels,pca,num_elements,dim=pickle.load(open(pca_path,'rb'))
+        pca,num_elements,dim=pickle.load(open(pca_path,'rb'))
         img_features=pca.transform(outputs)
         print('pca transform time:{}'.format(time.time()-s2))
 
@@ -81,11 +84,20 @@ class SPURetrivalHandler(APIHandler):
         p = hnswlib.Index(space='cosine', dim=dim)
         hnsw_path=os.path.join(Config().hnsw_path,'hnsw_{}.bin'.format(custom_id))
         p.load_index(hnsw_path,max_elements=num_elements)
-        indexs, distances = p.knn_query(img_features, k=20)
+        indexs, distances = p.knn_query(img_features, k=50)
         print('hnswlib query time:{}'.format(time.time()-s3))
 
-        entity=[np.array(labels)[indexs]][0]
-        entity=[pandas.unique(arr).tolist()  for arr in entity]
-        print(entity)
-        result={'code':entity}
+        code=[]
+        file=[]
+        for arr in indexs:
+            tmp_code=[]
+            tmp_file=[]
+            for i in arr:
+                if not labels[i] in tmp_code:
+                    tmp_code.append(labels[i])
+                    tmp_file.append(files[i])
+            code.append(tmp_code)
+            file.append(tmp_file)
+        print(code)
+        result={'code':code,'file':file}
         self.send_to_client_non_encrypt(200, message='success', response=result)
