@@ -91,12 +91,13 @@ def ob_lp(orderDetail: dict, minBatchAmount):
 
     result = {}
     result['lpstatus'] = pulp.LpStatus[model.status]
-    result['value'] = pulp.value(model.objective)
+    result['covered'] = int(pulp.value(model.objective))
     items = []
-    for key,val in lpVariableDict_order.items():
-        for k,v in val.items():
-            if(v.varValue == 1):
-                items.append({'order': key, 'category': k})
+
+    for i,cate in enumerate(lpVariableDict_cate.keys()):
+        for order,var in lpVariableDict_cate[cate].items():
+            if (var.varValue==1):
+                items.append({'order': order, 'category': cate, 'no': i})
 
     result['items'] = items
 
@@ -107,16 +108,18 @@ def ob_lp(orderDetail: dict, minBatchAmount):
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.DEBUG)
-    order_amount=10000
-    sku=5000
-    orders={}
-    for od in range(order_amount):
-        tem={}
-        for _ in range(random.randint(2,5)):
-            tem['sku{}'.format(random.randint(1,sku))]=random.randint(1,2)
-        orders['order{}'.format(od)]=tem
+    # order_amount=10000
+    # sku=5000
+    # orders={}
+    # for od in range(order_amount):
+    #     tem={}
+    #     for _ in range(random.randint(2,5)):
+    #         tem['sku{}'.format(random.randint(1,sku))]=random.randint(1,2)
+    #     orders['order{}'.format(od)]=tem
 
+    orders={'o2':{'sku1':1,'sku3':1,},'o3':{'sku1':1,'sku4':1,},'o4':{'sku2':1,'sku3':1,},'o5':{'sku3':1,'sku4':1,},'o6':{'sku3':1,'sku5':1,}
+        ,'o7':{'sku5':1,'sku7':1,},'o8':{'sku6':1,'sku7':1,},'o9':{'sku4':1,'sku7':1,},'o10':{'sku8':1,'sku3':1,}}
     t1=time.time()
-    print(ob_lp(orders, 1))
+    print(ob_lp(orders, 3))
     t2=time.time()
     print('{:.0f}s'.format(t2-t1))
