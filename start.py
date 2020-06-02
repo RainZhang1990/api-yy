@@ -29,7 +29,7 @@ def make_app():
         url(r"/test", app.TestHandler, name='app.test'),
         url(r"/algorithm/orderbatch", order_batch.OrderBatchLPHandler, name='orderbatch'),
         url(r"/algorithm/skuretrievaltest",sku_retrieval.IndexHandler, name='skuretrievaltest'),
-        url(r"/algorithm/skuretrieval",sku_retrieval.SKURetrivalHandler, name='skuretrieval'),
+        url(r"/algorithm/spuretrieval",sku_retrieval.SKURetrivalHandler, name='skuretrieval'),
         url(r"/.*", app.NotFoundHandler, name='error404')
     ]
 
