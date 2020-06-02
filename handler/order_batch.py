@@ -10,7 +10,7 @@ from libs import zbase62
 import algorithm.ob
 
 
-class GetOrderBatch_LPHandler(APIHandler):
+class OrderBatchLPHandler(APIHandler):
     ''' get order batch through the lp method.
     '''
 

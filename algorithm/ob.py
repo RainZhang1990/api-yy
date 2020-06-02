@@ -100,9 +100,9 @@ def ob_lp(orderDetail: dict, minBatchAmount):
                 items.append({'order': order, 'category': cate, 'no': i})
 
     result['items'] = items
-
     logging.info("step4:{}".format(time.strftime('%Y-%m-%d %H:%M:%S')))
-
+    logging.info("result: {}  {}".format(result['lpstatus'] ,result['covered']))
+    
     return result
 
 

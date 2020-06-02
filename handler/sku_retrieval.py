@@ -6,6 +6,7 @@ import json
 import numpy as np
 import os
 from io import BytesIO
+import logging
 
 import libs.validator
 import tornado
@@ -34,9 +35,9 @@ import pandas
 
 class IndexHandler(tornado.web.RequestHandler):
     def get(self,*args,**kwargs):
-        self.render('spu_retrieval.html') 
+        self.render('sku_retrieval.html') 
 
-class SPURetrivalHandler(APIHandler):
+class SKURetrivalHandler(APIHandler):
 
     @authenticated_async
     async def post(self):
@@ -54,10 +55,10 @@ class SPURetrivalHandler(APIHandler):
             img=Image.open(BytesIO(base64.b64decode(img_str))).resize(IMAGE_SHAPE)
             img_data = preprocess_input(np.array(img))
             img_list.append(img_data.tolist())
-        print('preprocess time:{}'.format(time.time()-s1))
+        logging.info('preprocess time:{}'.format(time.time()-s1))
 
         channel=grpc.insecure_channel('{}:{}'.format(Config().tf_serving_ip,Config().tf_serving_port)
-            # ,options=[('grpc.default_authority','spu_retrieval')]
+            # ,options=[('grpc.default_authority','sku_retrieval')]
             )
         stub=prediction_service_pb2_grpc.PredictionServiceStub(channel)
         request=predict_pb2.PredictRequest()
@@ -67,37 +68,37 @@ class SPURetrivalHandler(APIHandler):
         request.inputs['input_1'].CopyFrom(tf.make_tensor_proto(img_list))
         s1=time.time()
         response=stub.Predict(request,20)
-        print('data copy time:{}  inference time:{}'.format(s1-s0,time.time()-s1))
+        logging.info('data copy time:{}  inference time:{}'.format(s1-s0,time.time()-s1))
         outputs=np.asarray(response.outputs['conv5_block3_out'].float_val)
         outputs=np.reshape(outputs,(len(img_list),-1))
 
         s2=time.time()
-        file_path=os.path.join(Config().file_path,'file_{}.bin'.format(custom_id))
-
-        labels,files=pickle.load(open(file_path,'rb'))
-        pca_path=os.path.join(Config().pca_path,'pca_{}.bin'.format(custom_id))
+        iid_path=os.path.join(Config().iid_path,'{}.bin'.format(custom_id))
+        labels,img_ids=pickle.load(open(iid_path,'rb'))
+        pca_path=os.path.join(Config().pca_path,'{}.bin'.format(custom_id))
         pca,num_elements,dim=pickle.load(open(pca_path,'rb'))
         img_features=pca.transform(outputs)
-        print('pca transform time:{}'.format(time.time()-s2))
+        logging.info('pca transform time:{}'.format(time.time()-s2))
 
         s3=time.time()
         p = hnswlib.Index(space='cosine', dim=dim)
-        hnsw_path=os.path.join(Config().hnsw_path,'hnsw_{}.bin'.format(custom_id))
+        hnsw_path=os.path.join(Config().hnsw_path,'{}.bin'.format(custom_id))
         p.load_index(hnsw_path,max_elements=num_elements)
         indexs, distances = p.knn_query(img_features, k=50)
-        print('hnswlib query time:{}'.format(time.time()-s3))
+        logging.info('hnswlib query time:{}'.format(time.time()-s3))
 
         code=[]
-        file=[]
+        img_url=[]
         for arr in indexs:
             tmp_code=[]
-            tmp_file=[]
+            tmp_url=[]
             for i in arr:
                 if not labels[i] in tmp_code:
                     tmp_code.append(labels[i])
-                    tmp_file.append(files[i])
+                    url='{}/{}/src/{}/{}'.format(Config().img_url_prefix,custom_id,labels[i],img_ids[i])
+                    tmp_url.append(url)
             code.append(tmp_code)
-            file.append(tmp_file)
-        print(code)
-        result={'code':code,'file':file}
+            img_url.append(tmp_url)
+        logging.info(code)
+        result={'code':code,'url':img_url}
         self.send_to_client_non_encrypt(200, message='success', response=result)
