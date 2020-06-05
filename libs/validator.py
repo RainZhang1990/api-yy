@@ -308,17 +308,15 @@ def batch(value):
 
 def orderForGrouping(value):
     try:
-        Schema(list).validate(value)
+        Schema(dict).validate(value)
     except:
-        message = '拣货订单须为List类型'
+        message = '拣货订单须为Dict类型'
         raise ValidationError(message)
 
     for od in value:
         try:
-            Schema({'order': str, 'sku': str,'amount':str}).validate(od)
+            Schema(dict).validate(od)
         except:
-            message = '订单明细须为字典类型（order sku amount）'
+            message = '订单明细须为字典类型'
             raise ValidationError(message)
-        if not (od['order'].strip() and od['sku'].strip() and od['amount'].strip()):
-            message = '订单 sku 数量均不得为空'
-            raise ValidationError(message)
+
