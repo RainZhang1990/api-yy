@@ -17,8 +17,8 @@ class OrderBatchLPHandler(APIHandler):
     @authenticated_async
     async def post(self):
         try:
-            libs.validator.orderForGrouping(
-                self.post_data.get("orderDetail"))
+            # libs.validator.orderForGrouping(
+            #     self.post_data.get("orderDetail"))
             libs.validator.batch(self.post_data.get("batch"))
 
         except libs.validator.ValidationError as e:
