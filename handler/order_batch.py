@@ -16,22 +16,21 @@ class OrderBatchLPHandler(APIHandler):
 
     @authenticated_async
     async def post(self):
-        try:
-            # libs.validator.orderForGrouping(
-            #     self.post_data.get("orderDetail"))
-            libs.validator.batch(self.post_data.get("batch"))
-
-        except libs.validator.ValidationError as e:
-            self.send_to_client_non_encrypt(-1, message=e.__str__())
-            return
-
         orderDetail = self.post_data.get("orderDetail")
         batch = self.post_data.get("batch")
+        try:
+            libs.validator.orderForGrouping(orderDetail)
+            libs.validator.batch(batch)
+
+        except libs.validator.ValidationError as e:
+            self.send_to_client_non_encrypt(400, message=e.__str__())
+            return
+
 
         result = algorithm.ob.ob_lp(orderDetail, batch)
 
         if not result['lpstatus'] == 'Optimal':
-            self.send_to_client_non_encrypt(202, message='failure',
+            self.send_to_client_non_encrypt(200, message='failure',
                                             response={'status': result['status'], 'value': -1, 'items': []})
             return
         else:
