@@ -4,7 +4,7 @@ __author__ = 'zeewell'
 import re
 import time
 import libs.citizen_id
-from schema import Schema
+from schema import Schema, And, Or
 
 
 class ValidationError(ValueError):
@@ -19,12 +19,11 @@ class ValidationError(ValueError):
 def required(value, message=None):
     if not message:
         message = '值不能为空'
-
-    value = value.strip()
+    
+    # value = value.strip()
     if not value:
         raise ValidationError(message)
 
-    return True
 
 
 def length(value, min_length=-1, max_length=-1, message=None):
@@ -296,27 +295,20 @@ def year(value):
 
 def batch(value):
     try:
-        Schema(int).validate(value)
+        Schema(And(int, lambda n: 0 < n < 9999)).validate(value)
     except:
-        message = '参数类型异常'
-        raise ValidationError(message)
-
-    if value < 1 or value > 9999:
-        message = '批次数量范围异常'
+        message = '批次数量异常: {}'.format(value)
         raise ValidationError(message)
 
 
 def orderForGrouping(value):
     try:
-        Schema(dict).validate(value)
+        Schema({str: {str: int}}).validate(value)
     except:
-        message = '拣货订单须为Dict类型'
+        message = '订单须为Dict<string,Dict<string,int>>类型'
         raise ValidationError(message)
 
-    for od in value:
-        try:
-            Schema(dict).validate(od)
-        except:
-            message = '订单明细须为字典类型'
-            raise ValidationError(message)
-
+def ir_category(value):
+    category = ['sr', 'ic']
+    if not value in category:
+        raise ValidationError('category参数异常')
