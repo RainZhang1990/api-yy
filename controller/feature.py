@@ -29,7 +29,6 @@ class FeatureManager(metaclass=Singleton):
             for _file in os.listdir(pca_path):
                 file_name = _file.split('.')[0]
                 with open(os.path.join(pca_path, _file), 'rb') as f:
-                    f.seek(0)
                     pca = pickle.load(f)
                     self.features[category]['pca'][file_name] = pca
 
@@ -37,7 +36,6 @@ class FeatureManager(metaclass=Singleton):
             for _file in os.listdir(iid_path):
                 file_name = _file.split('.')[0]
                 with open(os.path.join(iid_path, _file), 'rb') as f:
-                    f.seek(0)
                     iid = pickle.load(f)
                     self.features[category]['iid'][file_name] = iid
 
@@ -45,7 +43,6 @@ class FeatureManager(metaclass=Singleton):
             for _file in os.listdir(label_path):
                 file_name = _file.split('.')[0]
                 with open(os.path.join(label_path, _file), 'rb') as f:
-                    f.seek(0)
                     label = pickle.load(f)
                     self.features[category]['label'][file_name] = label
 
