@@ -10,15 +10,14 @@ requests = "*"
 schema = "*"
 pyyaml = "*"
 pulp = "*"
-tensorflow-serving-api = "*"
 scipy = "*"
 hnswlib = "*"
 pandas = "*"
-scikit-learn = "*"
+scikit-learn = ""
+redis = "*"
+oss2 = "*"
 tensorflow-gpu = "==2.0.1"
-
-[dev-packages]
-psycopg2 = "*"
+tensorflow-serving-api = "==2.0.0"
 
 [requires]
 python_version = "3.7"

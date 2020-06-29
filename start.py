@@ -10,10 +10,10 @@ from tornado.options import define, options
 from tornado.web import url
 
 import core
-# import core.backend
-import core.redis
-from core.config import Config, Secret
-from handler import app,order_batch,sku_retrieval
+import ir_fit
+from core import redis,oss,config
+from core.config import Config
+from handler import app,order_batch,image_retrieval
 
 
 def make_app():
@@ -28,8 +28,11 @@ def make_app():
     handlers = [
         url(r"/test", app.TestHandler, name='app.test'),
         url(r"/algorithm/orderbatch", order_batch.OrderBatchLPHandler, name='orderbatch'),
-        url(r"/algorithm/skuretrievaltest",sku_retrieval.IndexHandler, name='skuretrievaltest'),
-        url(r"/algorithm/spuretrieval",sku_retrieval.SKURetrivalHandler, name='skuretrieval'),
+        url(r"/algorithm/imageretrievaltest",image_retrieval.IndexHandler, name='imageretrievaltest'),
+        url(r"/algorithm/imageretrieval",image_retrieval.ImageRetrivalHandler, name='imageretrieval'),
+        url(r"/algorithm/irfit",image_retrieval.IrFitHandler, name='IrFitHandler'),
+        url(r"/algorithm/irlabel",image_retrieval.IrLabelHandler, name='IrLabelHandler'),
+        url(r"/algorithm/irfitstatus",image_retrieval.IrFitStatusHandler, name='IrFitStatusHandler'),
         url(r"/.*", app.NotFoundHandler, name='error404')
     ]
 
@@ -37,8 +40,6 @@ def make_app():
 
 
 def signal_shutdown_handler(signal, frame):
-    del core.backend.backend_user_media
-
     logging.critical('application exited')
     sys.exit(0)
 
@@ -66,14 +67,7 @@ def main():
     IOLoop.current().start()
 
 
-def init_config():
-    #   第一个位置用于实际部署时使用（ 比如 k8s 或 docker 的 volume mapping ）
-    #   第二个位置则是默认位置，可用于开发中使用
-    filepaths = ['config.yaml',
-                 os.path.join('.','config','config.yaml')]
-
-    Config().load_config(filepaths)
-
+def init_options():
     # set options
     options.define("debug", default=Config().debug)
     options.define("thread", default=Config().thread)
@@ -81,25 +75,12 @@ def init_config():
                    help='run on the given port', type=int)
 
 
-def init_secret():
-    Secret().load_secret(
-        "redis",
-        ["host", "port", "password"],
-        ["/var/app/secret/", "./secret/"]
-    )
-
-
 if __name__ == '__main__':
-    init_config()
-
-    # init_secret()
-    #
-    # err = core.backend.init_backend()
-    # if err:
-    #     raise Exception("init backend error: " + err.decode())
-    #
-    # os.makedirs(Config().uploads_temp_path, exist_ok=True)
-    #
-    # core.redis.init()
-
+    config.init()
+    redis.init()
+    # oss.init()
+    init_options()
+    workers = Config().image_retrival.get('fit_workers')
+    ir_fit.main(workers)
     main()
+ 
