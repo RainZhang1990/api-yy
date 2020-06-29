@@ -17,19 +17,19 @@ def init():
                                       decode_responses=True, # byte -> string
                                       max_connections=Config().redis.get('max_connections'))
     chan_sub = Config().redis.get('chan_sub')
-    _thread.start_new_thread(msg_process)
+    _thread.start_new_thread(msg_process, ())
 
 def msg_process():
     retry_interval = Config().redis.get('retry_interval')
     while True:
-        # try:
-        for msg in subscribe().listen():
-            if  msg['type']=='message': 
-                m=msg['data'].split('_')
-                FeatureManager().update_feature(m[0],m[1])
-        # except Exception as e:
-        #     logging.critical(e)
-        #     time.sleep(retry_interval)
+        try:
+            for msg in subscribe().listen():
+                if  msg['type']=='message': 
+                    m=msg['data'].split('_')
+                    FeatureManager().update_feature(m[0],m[1])
+        except Exception as e:
+            logging.critical(e)
+            time.sleep(retry_interval)
         
 
 def publish(msg):
