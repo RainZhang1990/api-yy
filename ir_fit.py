@@ -120,12 +120,12 @@ def fit(save_dir, category, co_id, pca_n, batch, iid, labels, oss_bucket, tf_ser
     logging.getLogger().setLevel(logging.INFO)
     pipe1_1, pipe1_2 = mp.Pipe(duplex=False)
     pipe2_1, pipe2_2 = mp.Pipe(duplex=False)
-    pool = Pool(processes=3)
+    pool = Pool(processes=2)
 
     t1 = time.time()
     data_length = len(iid)
-    il = pool.apply_async(load_image, args=(iid, batch, pipe1_2, oss_bucket))
-    fe = pool.apply_async(feature_extract, args=(
+    pool.apply_async(load_image, args=(iid, batch, pipe1_2, oss_bucket))
+    pool.apply_async(feature_extract, args=(
         batch, data_length, tf_serving_ip, tf_serving_port, pipe1_1, pipe2_2))
     pool.close()
     pca, hnsw = pca_hnsw(pca_n, data_length, pipe2_1)
@@ -200,7 +200,7 @@ def fit_queue(category):
 def main(fit_workers, keep_alive=False):
     for _ in range(workers):
         Process(target=fit_queue, args=('sr',)).start()
-        # pool.apply_async(fit_queue, ('ic',))
+        Process(target=fit_queue, args=('ic',)).start()
     while keep_alive:
         pass
 
