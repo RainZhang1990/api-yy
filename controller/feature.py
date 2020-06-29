@@ -28,21 +28,26 @@ class FeatureManager(metaclass=Singleton):
             pca_path = os.path.join(self.path, category, 'pca')
             for _file in os.listdir(pca_path):
                 file_name = _file.split('.')[0]
-                pca = pickle.load(open(os.path.join(pca_path, _file), 'rb'))
-                self.features[category]['pca'][file_name] = pca
+                with open(os.path.join(pca_path, _file), 'rb') as f:
+                    f.seek(0)
+                    pca = pickle.load(f)
+                    self.features[category]['pca'][file_name] = pca
 
             iid_path = os.path.join(self.path, category, 'iid')
             for _file in os.listdir(iid_path):
                 file_name = _file.split('.')[0]
-                iid = pickle.load(open(os.path.join(iid_path, _file), 'rb'))
-                self.features[category]['iid'][file_name] = iid
+                with open(os.path.join(iid_path, _file), 'rb') as f:
+                    f.seek(0)
+                    iid = pickle.load(f)
+                    self.features[category]['iid'][file_name] = iid
 
             label_path = os.path.join(self.path, category, 'label')
             for _file in os.listdir(label_path):
                 file_name = _file.split('.')[0]
-                label = pickle.load(
-                    open(os.path.join(label_path, _file), 'rb'))
-                self.features[category]['label'][file_name] = label
+                with open(os.path.join(label_path, _file), 'rb') as f:
+                    f.seek(0)
+                    label = pickle.load(f)
+                    self.features[category]['label'][file_name] = label
 
             hnsw_path = os.path.join(self.path, category, 'hnsw')
             for _file in os.listdir(hnsw_path):
@@ -70,16 +75,19 @@ class FeatureManager(metaclass=Singleton):
         pca_path = os.path.join(self.path, category, 'pca', co_id + '.bin')
         if not os.path.exists(pca_path):
             raise Exception('feature path not exist')
-        pca = pickle.load(open(pca_path, 'rb'))
-        self.features[category]['pca'][co_id] = pca
+        with open(pca_path, 'rb') as f:
+            pca = pickle.load(f)
+            self.features[category]['pca'][co_id] = pca
 
         iid_path = os.path.join(self.path, category, 'iid', co_id + '.bin')
-        iid = pickle.load(open(iid_path, 'rb'))
-        self.features[category]['iid'][co_id] = iid
+        with open(iid_path, 'rb') as f:
+            iid = pickle.load(f)
+            self.features[category]['iid'][co_id] = iid
 
         label_path = os.path.join(self.path, category, 'label', co_id + '.bin')
-        label = pickle.load(open(label_path, 'rb'))
-        self.features[category]['label'][co_id] = label
+        with open(label_path, 'rb') as f:
+            label = pickle.load(f)
+            self.features[category]['label'][co_id] = label
 
         hnsw_path = os.path.join(self.path, category, 'hnsw', co_id + '.bin')
         hnsw = hnswlib.Index(
