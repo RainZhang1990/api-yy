@@ -78,6 +78,7 @@ def init_options():
 if __name__ == '__main__':
     config.init()
     redis.init()
+    redis.listen()
     # oss.init()
     init_options()
     workers = Config().image_retrival.get('fit_workers')
