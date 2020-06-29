@@ -4,6 +4,7 @@ import pickle
 from core.config import Config
 from core.singleton import Singleton
 import hnswlib
+import logging
 
 
 class FeatureManager(metaclass=Singleton):
@@ -52,7 +53,7 @@ class FeatureManager(metaclass=Singleton):
                 hnsw = hnswlib.Index(
                     space='cosine', dim=self.features[category]['pca'][file_name].n_components_)
                 hnsw.load_index(os.path.join(hnsw_path, _file),
-                                 max_elements=len(self.features[category]['iid'][file_name][0]))
+                                max_elements=len(self.features[category]['iid'][file_name][0]))
                 hnsw.set_ef(100)
                 self.features[category]['hnsw'][file_name] = hnsw
 
@@ -93,3 +94,6 @@ class FeatureManager(metaclass=Singleton):
             self.features[category]['iid'][co_id][0]))
         hnsw.set_ef(100)
         self.features[category]['hnsw'][co_id] = hnsw
+
+        logging.info(
+            'feature updated, category: {}   co_id: {}'.format(category, co_id))

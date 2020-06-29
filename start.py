@@ -29,6 +29,7 @@ def make_app():
         url(r"/test", app.TestHandler, name='app.test'),
         url(r"/algorithm/orderbatch", order_batch.OrderBatchLPHandler, name='orderbatch'),
         url(r"/algorithm/imageretrievaltest",image_retrieval.IndexHandler, name='imageretrievaltest'),
+        url(r"/algorithm/spuretrieval",image_retrieval.ImageRetrivalHandler, name='imageretrieval'),   # 临时
         url(r"/algorithm/imageretrieval",image_retrieval.ImageRetrivalHandler, name='imageretrieval'),
         url(r"/algorithm/irfit",image_retrieval.IrFitHandler, name='IrFitHandler'),
         url(r"/algorithm/irlabel",image_retrieval.IrLabelHandler, name='IrLabelHandler'),
