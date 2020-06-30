@@ -96,4 +96,4 @@ class FeatureManager(metaclass=Singleton):
         self.features[category]['hnsw'][co_id] = hnsw
 
         logging.info(
-            'feature updated, category: {}   co_id: {}'.format(category, co_id))
+            'Feature updated, category: {}   co_id: {}'.format(category, co_id))

@@ -18,9 +18,4 @@ class TestHandler(RequestHandler):
 
 class NotFoundHandler(RequestHandler):
     def prepare(self):
-        ret = super(NotFoundHandler, self).prepare()
-        if ret and ret.exception():
-            return ret
-
-        if not self._finished:
-            raise HTTPError(404)
+        raise HTTPError(404)

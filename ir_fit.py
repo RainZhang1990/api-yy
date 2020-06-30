@@ -17,7 +17,7 @@ from libs.tf import *
 import asyncio
 
 
-def load_image(img_paths, batch, pipe1, oss_bucket):
+def load_image(img_paths, batch, pipe1, oss_bucket, category, co_id):
     logging.getLogger().setLevel(logging.INFO)
     try:
         t = time.time()
@@ -25,22 +25,22 @@ def load_image(img_paths, batch, pipe1, oss_bucket):
             img_stream = BytesIO(oss_bucket.get_object(path).read())
             img = image.open(img_stream)
             if (i-len(img_paths) % batch) % batch == 0:
-                logging.info('images  batch {} sended {:.1f}s '.format(
-                    i // batch, time.time()-t))
+                logging.info('{}_{}: images  batch {} sended {:.1f}s'.format(category, co_id,
+                                                                             i // batch, time.time()-t))
                 t = time.time()
             pipe1.send(img)
         pipe1.send(0)
-        logging.info('load_image finished ')
+        logging.info('{}_{}: load_image finished '.format(category, co_id))
     except Exception as e:
-        logging.critical(e)
+        logging.critical(
+            '{}_{}: fit error(load_image), {}'.format(category, co_id, e))
         pipe1.send(e)
 
 
-def feature_extract(batch, data_length, tf_serving_ip, tf_serving_port, pipe1, pipe2):
+def feature_extract(batch, data_length, tf_serving_ip, tf_serving_port, pipe1, pipe2, category, co_id):
     logging.getLogger().setLevel(logging.INFO)
     try:
-        flag = True
-        no = 0
+        flag, no = True, 0
         while flag:
             no += 1
             imgs = []
@@ -61,27 +61,26 @@ def feature_extract(batch, data_length, tf_serving_ip, tf_serving_port, pipe1, p
             if len(imgs) == 0:
                 break
             t = time.time()
-            logging.info('feature extracting batch {} '.format(no))
+            logging.info('{}_{}: feature extracting batch {} '.format(
+                category, co_id, no))
             features = get_resnet101_feature_grpc('{}:{}'.format(
                 tf_serving_ip, tf_serving_port), imgs, 10000)
             # features = get_resnet101_feature_local(imgs)
             logging.info(
-                'feature extracting batch {} finished {:.1f}s '.format(no, time.time()-t))
+                '{}_{}: feature extracting batch {} finished {:.1f}s '.format(category, co_id, no, time.time()-t))
             pipe2.send(features)
         pipe2.send(0)
-        logging.info('feature_extract finished ')
+        logging.info(
+            '{}_{}: feature_extract finished '.format(category, co_id))
     except Exception as e:
-        logging.critical(e)
+        logging.critical(
+            '{}_{}: fit error(feature_extract), {}'.format(category, co_id, e))
         pipe2.send(e)
 
 
-def pca_hnsw(pca_n, data_length, pipe2):
+def pca_hnsw(pca_n, data_length, pipe2, category, co_id):
     try:
-        hnsw = None
-        pca = None
-        n = None
-        no = 0
-        feature_list = []
+        hnsw, pca, n, no, feature_list = None, None, None, 0, []
         while True:
             no += 1
             features = pipe2.recv()
@@ -95,19 +94,22 @@ def pca_hnsw(pca_n, data_length, pipe2):
                                     ef_construction=100, M=64)
                 feature_list.append(features)
                 t = time.time()
-                logging.info('pca partial fiting batch {} '.format(no))
+                logging.info('{}_{}: pca partial fiting batch {} '.format(
+                    category, co_id, no))
                 pca.partial_fit(features)
-                logging.info('pca partial fiting batch {} finished {:.1f}s '.format(
-                    no, time.time()-t))
+                logging.info('{}_{}: pca partial fiting batch {} finished {:.1f}s '.format(category, co_id,
+                                                                                           no, time.time()-t))
             else:
                 break
         t = time.time()
         for f in feature_list:
             hnsw.add_items(pca.transform(f))
-        logging.info('pca hnsw time {:.1f}s '.format(time.time()-t))
+        logging.info('{}_{}: pca hnsw time {:.1f}s '.format(
+            category, co_id, time.time()-t))
         return pca, hnsw
     except Exception as e:
-        logging.critical(e)
+        logging.critical(
+            '{}_{}: fit error(pca_hnsw), {}'.format(category, co_id, e))
         raise e
 
 
@@ -124,14 +126,15 @@ def fit(save_dir, category, co_id, pca_n, batch, iid, labels, oss_bucket, tf_ser
 
     t1 = time.time()
     data_length = len(iid)
-    pool.apply_async(load_image, args=(iid, batch, pipe1_2, oss_bucket))
+    pool.apply_async(load_image, args=(
+        iid, batch, pipe1_2, oss_bucket, category, co_id))
     pool.apply_async(feature_extract, args=(
-        batch, data_length, tf_serving_ip, tf_serving_port, pipe1_1, pipe2_2))
+        batch, data_length, tf_serving_ip, tf_serving_port, pipe1_1, pipe2_2, category, co_id))
     pool.close()
-    pca, hnsw = pca_hnsw(pca_n, data_length, pipe2_1)
+    pca, hnsw = pca_hnsw(pca_n, data_length, pipe2_1, category, co_id)
     pool.join()
 
-    logging.info('writing...')
+    logging.info('{}_{}: writing...'.format(category, co_id))
     path = os.path.join(save_dir, category, 'iid', '{}.bin'.format(co_id))
     pickle.dump((iid, labels), open(path, 'wb'))
     path = os.path.join(save_dir, category,  'pca', '{}.bin'.format(co_id))
@@ -141,8 +144,8 @@ def fit(save_dir, category, co_id, pca_n, batch, iid, labels, oss_bucket, tf_ser
     path = os.path.join(save_dir, category, 'label', '{}.bin'.format(co_id))
     pickle.dump(sorted(set(labels)), open(path, 'wb'))
 
-    logging.info('irfit total cost {}s ,  co_id: {}  category: {}'.format(
-        time.time()-t1, co_id, category))
+    logging.info('{}_{}: irfit total cost {}s'.format(category, co_id,
+                                                      time.time()-t1))
 
 
 def oss_init(oss_bucket, category, co_id):
@@ -183,6 +186,8 @@ def fit_queue(category):
             redis.redis_hset(category, co_id, 'stime',
                              time.strftime(time_format, time.localtime()))
             labels, iid, = oss_init(oss_bucket, category, co_id)
+            if len(iid) == 0:
+                raise Exception('oss image empty')
             fit(save_dir, category, co_id, pca_n, batch, iid, labels,
                 oss_bucket, tf_serving_ip, tf_serving_port)
             redis.redis_hset(category, co_id, 'status', 'finished')
@@ -191,7 +196,7 @@ def fit_queue(category):
             redis.publish('{}_{}'.format(category, co_id))
         except Exception as e:
             logging.critical(
-                'fit error, category: {} co_id: {}  e: {}'.format(category, co_id, e))
+                '{}_{}: fit error, {}'.format(category, co_id, e))
             redis.redis_hset(category, co_id, 'status', 'failed')
             redis.redis_hset(category, co_id, 'etime',
                              time.strftime(time_format, time.localtime()))
@@ -203,6 +208,7 @@ def main(fit_workers, keep_alive=False):
         Process(target=fit_queue, args=('ic',)).start()
     while keep_alive:
         pass
+
 
 if __name__ == "__main__":
     config.init()

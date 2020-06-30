@@ -35,8 +35,7 @@ class ImageRetrivalHandler(APIHandler):
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
 
-        logging.info('ImageRetrival  co_id: {}  category: {}'.format(
-            custom_id, category))
+        logging.info('{}_{}: ImageRetrival'.format(category, custom_id))
         s1 = time.time()
         img_list = []
         for img_str in imgs:
@@ -51,27 +50,29 @@ class ImageRetrivalHandler(APIHandler):
 
         s2 = time.time()
         img_features = pca.transform(features)
-        logging.info('pca transform time:{}'.format(time.time()-s2))
+        logging.info('{}_{}: pca transform time:{}'.format(
+            category, custom_id, time.time()-s2))
 
         s3 = time.time()
         indexs, distances = hnsw.knn_query(img_features, k=50)
-        logging.info('hnswlib query time:{}'.format(time.time()-s3))
+        logging.info('{}_{}: hnswlib query time:{}'.format(
+            category, custom_id, time.time()-s3))
 
-        code, img_url, distance = [], [], []
+        code, img_url, similarity = [], [], []
         for i, arr in enumerate(indexs):
-            tmp_code, tmp_url, tmp_distance = [], [], []
+            tmp_code, tmp_url, tmp_similarity = [], [], []
             for j, index in enumerate(arr):
                 if not labels[index] in tmp_code:
                     tmp_code.append(labels[index])
                     url = 'http://{}.{}/{}'.format(
                         Config().oss.get('bucket'), Config().oss.get('endpoint'), img_ids[index])
                     tmp_url.append(url)
-                    tmp_distance.append('{:.2%}'.format(1-distances[i][j]))
+                    tmp_similarity.append('{:.2%}'.format(1-distances[i][j]))
             code.append(tmp_code)
             img_url.append(tmp_url)
-            distance.append(tmp_distance)
-        logging.info(code)
-        result = {'code': code, 'similarity': distance, 'url': img_url}
+            similarity.append(tmp_similarity)
+        logging.info('{}_{}: {}'.format(category, custom_id, code))
+        result = {'code': code, 'similarity': similarity, 'url': img_url}
         self.send_to_client_non_encrypt(
             200, message='success', response=result)
 
@@ -90,17 +91,18 @@ class IrFitHandler(APIHandler):
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
 
-        logging.info('IrFit: {}  {}'.format(custom_id, category))
+        logging.info('{}_{}: IrFit'.format(category, custom_id))
         interval = Config().image_retrival.get('fit_interval')
         time_format = Config().time_format
         fit_status = redis.redis_hgetall(category, custom_id)
         if len(fit_status) > 0:
-            if fit_status.get('status') in ['queuing', 'fitting']:
+            fstatus=fit_status.get('status')
+            if fstatus in ['queuing', 'fitting']:
                 self.send_to_client_non_encrypt(
                     202, 'success', response='请求已接受,请勿重复提交')
                 return
             etime = time.strptime(fit_status.get('etime'), time_format)
-            if time.time() - time.mktime(etime) < interval:
+            if fstatus=='finished' and time.time() - time.mktime(etime) < interval:
                 self.send_to_client_non_encrypt(
                     403, 'failure', response='请求过于频繁,请稍后再试')
                 return
@@ -124,7 +126,7 @@ class IrLabelHandler(APIHandler):
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
 
-        logging.info('Get IrFitLabel: {}  {}'.format(custom_id, category))
+        logging.info('{}_{}: Get IrFitLabel'.format(category, custom_id))
         result = {'label': FeatureManager().get_label(category, custom_id)}
         self.send_to_client_non_encrypt(200, 'success', response=result)
 
@@ -143,6 +145,6 @@ class IrFitStatusHandler(APIHandler):
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
 
-        logging.info('Get IrFitStatus: {}  {}'.format(custom_id, category))
+        logging.info('{}_{}: Get IrFitStatus'.format(category, custom_id))
         result = {'fit status': redis.redis_hgetall(category, custom_id)}
         self.send_to_client_non_encrypt(200, 'success', response=result)
