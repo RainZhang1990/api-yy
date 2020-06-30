@@ -65,7 +65,7 @@ class ImageRetrivalHandler(APIHandler):
                 if not labels[index] in tmp_code:
                     tmp_code.append(labels[index])
                     url = 'http://{}.{}/{}'.format(
-                        Config().oss.get('bucket'), Config().oss.get('endpoint'), img_ids[index])
+                        Config().oss.get('bucket'), Config().oss.get('endpoint_public'), img_ids[index])
                     tmp_url.append(url)
                     tmp_similarity.append('{:.2%}'.format(1-distances[i][j]))
             code.append(tmp_code)
@@ -96,13 +96,13 @@ class IrFitHandler(APIHandler):
         time_format = Config().time_format
         fit_status = redis.redis_hgetall(category, custom_id)
         if len(fit_status) > 0:
-            fstatus=fit_status.get('status')
+            fstatus = fit_status.get('status')
             if fstatus in ['queuing', 'fitting']:
                 self.send_to_client_non_encrypt(
                     202, 'success', response='请求已接受,请勿重复提交')
                 return
             etime = time.strptime(fit_status.get('etime'), time_format)
-            if fstatus=='finished' and time.time() - time.mktime(etime) < interval:
+            if fstatus == 'finished' and time.time() - time.mktime(etime) < interval:
                 self.send_to_client_non_encrypt(
                     403, 'failure', response='请求过于频繁,请稍后再试')
                 return

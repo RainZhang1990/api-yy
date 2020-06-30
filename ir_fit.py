@@ -7,7 +7,7 @@ import time
 from io import BytesIO
 import hnswlib
 from sklearn.decomposition import IncrementalPCA
-from multiprocessing import Process, Pool
+from multiprocessing import Process, Pool, Queue
 import multiprocessing as mp
 import oss2
 from core import redis, oss
@@ -17,7 +17,7 @@ from libs.tf import *
 import asyncio
 
 
-def load_image(img_paths, batch, pipe1, oss_bucket, category, co_id):
+def load_image(img_paths, batch, queue1, oss_bucket, category, co_id):
     logging.getLogger().setLevel(logging.INFO)
     try:
         t = time.time()
@@ -25,19 +25,19 @@ def load_image(img_paths, batch, pipe1, oss_bucket, category, co_id):
             img_stream = BytesIO(oss_bucket.get_object(path).read())
             img = image.open(img_stream)
             if (i-len(img_paths) % batch) % batch == 0:
-                logging.info('{}_{}: images  batch {} sended {:.1f}s'.format(category, co_id,
-                                                                             i // batch, time.time()-t))
+                logging.info('{}_{}: images  batch {} sended {:.1f}s'.format(
+                    category, co_id, i // batch, time.time()-t))
                 t = time.time()
-            pipe1.send(img)
-        pipe1.send(0)
+            queue1.put(img)
+        queue1.put(0)
         logging.info('{}_{}: load_image finished '.format(category, co_id))
     except Exception as e:
         logging.critical(
             '{}_{}: fit error(load_image), {}'.format(category, co_id, e))
-        pipe1.send(e)
+        queue1.put(e)
 
 
-def feature_extract(batch, data_length, tf_serving_ip, tf_serving_port, pipe1, pipe2, category, co_id):
+def feature_extract(batch, data_length, tf_serving_ip, tf_serving_port, queue1, queue2, category, co_id):
     logging.getLogger().setLevel(logging.INFO)
     try:
         flag, no = True, 0
@@ -47,11 +47,11 @@ def feature_extract(batch, data_length, tf_serving_ip, tf_serving_port, pipe1, p
             # 预加载部分数据 避免partial_fit报错
             if no == 1:
                 for _ in range(data_length % batch):
-                    img = pipe1.recv()
+                    img = queue1.get()
                     status_check(img)
                     imgs.append(img)
             for _ in range(batch):
-                img = pipe1.recv()
+                img = queue1.get()
                 status_check(img)
                 if not type(img) == int:
                     imgs.append(img)
@@ -66,24 +66,24 @@ def feature_extract(batch, data_length, tf_serving_ip, tf_serving_port, pipe1, p
             features = get_resnet101_feature_grpc('{}:{}'.format(
                 tf_serving_ip, tf_serving_port), imgs, 10000)
             # features = get_resnet101_feature_local(imgs)
-            logging.info(
-                '{}_{}: feature extracting batch {} finished {:.1f}s '.format(category, co_id, no, time.time()-t))
-            pipe2.send(features)
-        pipe2.send(0)
+            logging.info('{}_{}: feature extracting batch {} finished {:.1f}s '.format(
+                category, co_id, no, time.time()-t))
+            queue2.put(features)
+        queue2.put(0)
         logging.info(
             '{}_{}: feature_extract finished '.format(category, co_id))
     except Exception as e:
         logging.critical(
             '{}_{}: fit error(feature_extract), {}'.format(category, co_id, e))
-        pipe2.send(e)
+        queue2.put(e)
 
 
-def pca_hnsw(pca_n, data_length, pipe2, category, co_id):
+def pca_hnsw(pca_n, data_length, queue2, category, co_id):
     try:
         hnsw, pca, n, no, feature_list = None, None, None, 0, []
         while True:
             no += 1
-            features = pipe2.recv()
+            features = queue2.get()
             status_check(features)
             if not type(features) == int:
                 if pca == None:
@@ -92,7 +92,7 @@ def pca_hnsw(pca_n, data_length, pipe2, category, co_id):
                     hnsw = hnswlib.Index(space='cosine', dim=n)
                     hnsw.init_index(max_elements=data_length,
                                     ef_construction=100, M=64)
-                feature_list.append(features)
+                feature_list.append(features) 
                 t = time.time()
                 logging.info('{}_{}: pca partial fiting batch {} '.format(
                     category, co_id, no))
@@ -120,19 +120,20 @@ def status_check(obj):
 
 def fit(save_dir, category, co_id, pca_n, batch, iid, labels, oss_bucket, tf_serving_ip, tf_serving_port):
     logging.getLogger().setLevel(logging.INFO)
-    pipe1_1, pipe1_2 = mp.Pipe(duplex=False)
-    pipe2_1, pipe2_2 = mp.Pipe(duplex=False)
-    pool = Pool(processes=2)
+    queue1 = Queue(batch)
+    queue2 = Queue(batch)
 
     t1 = time.time()
     data_length = len(iid)
-    pool.apply_async(load_image, args=(
-        iid, batch, pipe1_2, oss_bucket, category, co_id))
-    pool.apply_async(feature_extract, args=(
-        batch, data_length, tf_serving_ip, tf_serving_port, pipe1_1, pipe2_2, category, co_id))
-    pool.close()
-    pca, hnsw = pca_hnsw(pca_n, data_length, pipe2_1, category, co_id)
-    pool.join()
+    p1 = Process(target=load_image, args=(
+        iid, batch, queue1, oss_bucket, category, co_id))
+    p2 = Process(target=feature_extract, args=(
+        batch, data_length, tf_serving_ip, tf_serving_port, queue1, queue2, category, co_id))
+    p1.start()
+    p2.start()
+    pca, hnsw = pca_hnsw(pca_n, data_length, queue2, category, co_id)
+    p1.join()
+    p2.join()
 
     logging.info('{}_{}: writing...'.format(category, co_id))
     path = os.path.join(save_dir, category, 'iid', '{}.bin'.format(co_id))
