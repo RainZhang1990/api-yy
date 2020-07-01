@@ -24,18 +24,20 @@ class ImageRetrivalHandler(APIHandler):
     @authenticated_async
     async def post(self):
         imgs = self.post_data.get('pic', None)
-        custom_id = self.post_data.get('custom_id', None)
+        co_id = self.post_data.get('co_id', None)
+        if co_id == None:
+            co_id = self.post_data.get('custom_id', None)
         category = self.post_data.get('category', 'sr')
         try:
             libs.validator.required(imgs)
-            libs.validator.required(custom_id)
+            libs.validator.required(co_id)
             libs.validator.ir_category(category)
 
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
 
-        logging.info('{}_{}: ImageRetrival'.format(category, custom_id))
+        logging.info('{}_{}: ImageRetrival'.format(category, co_id))
         s1 = time.time()
         img_list = []
         for img_str in imgs:
@@ -44,19 +46,19 @@ class ImageRetrivalHandler(APIHandler):
 
         features = get_resnet101_feature_grpc('{}:{}'.format(
             Config().tf_serving_ip, Config().tf_serving_port), img_list)
-        img_ids, labels = FeatureManager().get_iid(category, custom_id)
-        pca = FeatureManager().get_pca(category, custom_id)
-        hnsw = FeatureManager().get_hnsw(category, custom_id)
+        img_ids, labels = FeatureManager().get_iid(category, co_id)
+        pca = FeatureManager().get_pca(category, co_id)
+        hnsw = FeatureManager().get_hnsw(category, co_id)
 
         s2 = time.time()
         img_features = pca.transform(features)
         logging.info('{}_{}: pca transform time:{}'.format(
-            category, custom_id, time.time()-s2))
+            category, co_id, time.time()-s2))
 
         s3 = time.time()
         indexs, distances = hnsw.knn_query(img_features, k=50)
         logging.info('{}_{}: hnswlib query time:{}'.format(
-            category, custom_id, time.time()-s3))
+            category, co_id, time.time()-s3))
 
         code, img_url, similarity = [], [], []
         for i, arr in enumerate(indexs):
@@ -71,7 +73,7 @@ class ImageRetrivalHandler(APIHandler):
             code.append(tmp_code)
             img_url.append(tmp_url)
             similarity.append(tmp_similarity)
-        logging.info('{}_{}: {}'.format(category, custom_id, code))
+        logging.info('{}_{}: {}'.format(category, co_id, code))
         result = {'code': code, 'similarity': similarity, 'url': img_url}
         self.send_to_client_non_encrypt(
             200, message='success', response=result)
@@ -81,20 +83,20 @@ class IrFitHandler(APIHandler):
 
     @authenticated_async
     async def post(self):
-        custom_id = self.post_data.get('custom_id', None)
+        co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
-            libs.validator.required(custom_id)
+            libs.validator.required(co_id)
             libs.validator.ir_category(category)
 
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
 
-        logging.info('{}_{}: IrFit'.format(category, custom_id))
+        logging.info('{}_{}: IrFit'.format(category, co_id))
         interval = Config().image_retrival.get('fit_interval')
         time_format = Config().time_format
-        fit_status = redis.redis_hgetall(category, custom_id)
+        fit_status = redis.redis_hgetall(category, co_id)
         if len(fit_status) > 0:
             fstatus = fit_status.get('status')
             if fstatus in ['queuing', 'fitting']:
@@ -107,8 +109,8 @@ class IrFitHandler(APIHandler):
                     403, 'failure', response='请求过于频繁,请稍后再试')
                 return
 
-        co_info = redis.redis_lpush('ir', category, custom_id)
-        redis.redis_hset(category, custom_id, 'status', 'queuing')
+        co_info = redis.redis_lpush('ir', category, co_id)
+        redis.redis_hset(category, co_id, 'status', 'queuing')
         self.send_to_client_non_encrypt(202, 'success', response='请求已接受')
 
 
@@ -116,18 +118,18 @@ class IrLabelHandler(APIHandler):
 
     @authenticated_async
     async def get(self):
-        custom_id = self.post_data.get('custom_id', None)
+        co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
-            libs.validator.required(custom_id)
+            libs.validator.required(co_id)
             libs.validator.ir_category(category)
 
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
 
-        logging.info('{}_{}: Get IrFitLabel'.format(category, custom_id))
-        result = {'label': FeatureManager().get_label(category, custom_id)}
+        logging.info('{}_{}: Get IrFitLabel'.format(category, co_id))
+        result = {'label': FeatureManager().get_label(category, co_id)}
         self.send_to_client_non_encrypt(200, 'success', response=result)
 
 
@@ -135,16 +137,16 @@ class IrFitStatusHandler(APIHandler):
 
     @authenticated_async
     async def get(self):
-        custom_id = self.post_data.get('custom_id', None)
+        co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
-            libs.validator.required(custom_id)
+            libs.validator.required(co_id)
             libs.validator.ir_category(category)
 
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
 
-        logging.info('{}_{}: Get IrFitStatus'.format(category, custom_id))
-        result = {'fit status': redis.redis_hgetall(category, custom_id)}
+        logging.info('{}_{}: Get IrFitStatus'.format(category, co_id))
+        result = redis.redis_hgetall(category, co_id)
         self.send_to_client_non_encrypt(200, 'success', response=result)

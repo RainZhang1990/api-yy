@@ -28,12 +28,12 @@ def make_app():
     handlers = [
         url(r"/test", app.TestHandler, name='app.test'),
         url(r"/algorithm/orderbatch", order_batch.OrderBatchLPHandler, name='orderbatch'),
-        url(r"/algorithm/imageretrievaltest",image_retrieval.IndexHandler, name='imageretrievaltest'),
         url(r"/algorithm/spuretrieval",image_retrieval.ImageRetrivalHandler, name='spuretrieval'),   # 临时
-        url(r"/algorithm/imageretrieval",image_retrieval.ImageRetrivalHandler, name='imageretrieval'),
-        url(r"/algorithm/irfit",image_retrieval.IrFitHandler, name='IrFitHandler'),
-        url(r"/algorithm/irlabel",image_retrieval.IrLabelHandler, name='IrLabelHandler'),
-        url(r"/algorithm/irfitstatus",image_retrieval.IrFitStatusHandler, name='IrFitStatusHandler'),
+        url(r"/algorithm/imageretrieval/test",image_retrieval.IndexHandler, name='IrTest'),
+        url(r"/algorithm/imageretrieval/imageretrieval",image_retrieval.ImageRetrivalHandler, name='ImageRetrieval'),
+        url(r"/algorithm/imageretrieval/fit",image_retrieval.IrFitHandler, name='IrFit'),
+        url(r"/algorithm/imageretrieval/label",image_retrieval.IrLabelHandler, name='IrLabel'),
+        url(r"/algorithm/imageretrieval/fitstatus",image_retrieval.IrFitStatusHandler, name='IrFitStatus'),
         url(r"/.*", app.NotFoundHandler, name='error404')
     ]
 
