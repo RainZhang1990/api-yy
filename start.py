@@ -82,7 +82,7 @@ if __name__ == '__main__':
     redis.listen()
     # oss.init()
     init_options()
-    workers = Config().image_retrival.get('fit_workers')
+    workers = Config().image_retrieval.get('fit_workers')
     ir_fit.main(workers)
     main()
  

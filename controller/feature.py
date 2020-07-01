@@ -9,7 +9,7 @@ import logging
 
 class FeatureManager(metaclass=Singleton):
     def __init__(self):
-        self.path = Config().image_retrival.get('feature_path')
+        self.path = Config().image_retrieval.get('feature_path')
         self.features = dict()
         for category in os.listdir(self.path):
             t = dict()

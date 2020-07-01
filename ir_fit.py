@@ -167,10 +167,10 @@ def fit_queue(category):
     redis.init()
     oss.init()
 
-    batch = Config().image_retrival.get('batch')
-    pca_n = Config().image_retrival.get('pca_n_components')
-    save_dir = Config().image_retrival.get('feature_path')
-    retry_interval = Config().image_retrival.get('retry_interval')
+    batch = Config().image_retrieval.get('batch')
+    pca_n = Config().image_retrieval.get('pca_n_components')
+    save_dir = Config().image_retrieval.get('feature_path')
+    retry_interval = Config().image_retrieval.get('retry_interval')
     time_format = Config().time_format
     tf_serving_ip = Config().tf_serving_ip
     tf_serving_port = Config().tf_serving_port
@@ -213,7 +213,7 @@ def main(fit_workers, keep_alive=False):
 
 if __name__ == "__main__":
     config.init()
-    workers = Config().image_retrival.get('fit_workers')
+    workers = Config().image_retrieval.get('fit_workers')
     main(workers, True)
     # co_info = {'taotao': '10016905', 'leige': '10097386',
     #            'yulu': '10054631', 'aozi': '10051865'}

@@ -56,7 +56,10 @@ class ImageRetrivalHandler(APIHandler):
             category, co_id, time.time()-s2))
 
         s3 = time.time()
-        indexs, distances = hnsw.knn_query(img_features, k=50)
+        query_k = Config().image_retrieval.get('query_k')
+        if category == 'ic':
+            query_k = 1
+        indexs, distances = hnsw.knn_query(img_features, k=query_k)
         logging.info('{}_{}: hnswlib query time:{}'.format(
             category, co_id, time.time()-s3))
 
@@ -94,7 +97,7 @@ class IrFitHandler(APIHandler):
             return
 
         logging.info('{}_{}: IrFit'.format(category, co_id))
-        interval = Config().image_retrival.get('fit_interval')
+        interval = Config().image_retrieval.get('fit_interval')
         time_format = Config().time_format
         fit_status = redis.redis_hgetall(category, co_id)
         if len(fit_status) > 0:
