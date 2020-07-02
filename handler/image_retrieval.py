@@ -120,7 +120,7 @@ class IrFitHandler(APIHandler):
 class IrLabelHandler(APIHandler):
 
     @authenticated_async
-    async def get(self):
+    async def post(self):
         co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
@@ -139,7 +139,7 @@ class IrLabelHandler(APIHandler):
 class IrFitStatusHandler(APIHandler):
 
     @authenticated_async
-    async def get(self):
+    async def post(self):
         co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
