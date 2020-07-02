@@ -56,7 +56,7 @@ class ImageRetrivalHandler(APIHandler):
             category, co_id, time.time()-s2))
 
         s3 = time.time()
-        query_k = Config().image_retrieval.get('query_k')
+        query_k = min(Config().image_retrieval.get('query_k'), len(labels))
         if category == 'ic':
             query_k = 1
         indexs, distances = hnsw.knn_query(img_features, k=query_k)
