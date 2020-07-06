@@ -63,9 +63,9 @@ def feature_extract(batch, data_length, tf_serving_ip, tf_serving_port, queue1, 
             t = time.time()
             logging.info('{}_{}: feature extracting batch {} '
                          .format(category, co_id, no))
-            # features = get_resnet101_feature_grpc('{}:{}'.format(
-            #     tf_serving_ip, tf_serving_port), imgs, 10000)
-            features = get_resnet101_feature_local(imgs)
+            features = get_resnet101_feature_grpc('{}:{}'.format(
+                tf_serving_ip, tf_serving_port), imgs, 10000)
+            # features = get_resnet101_feature_local(imgs)
             logging.info('{}_{}: feature extracting batch {} finished {:.1f}s '
                          .format(category, co_id, no, time.time()-t))
             queue2.put(features)
@@ -211,7 +211,7 @@ def fit_queue(category):
 def main(fit_workers, keep_alive=False):
     for _ in range(fit_workers):
         Process(target=fit_queue, args=('sr',)).start()
-        # Process(target=fit_queue, args=('ic',)).start()
+        Process(target=fit_queue, args=('ic',)).start()
     while keep_alive:
         pass
 
