@@ -5,95 +5,68 @@ from core.config import Config
 from core.singleton import Singleton
 import hnswlib
 import logging
+from libs.utilities import Vividict
 
 
 class FeatureManager(metaclass=Singleton):
     def __init__(self):
         self.path = Config().image_retrieval.get('feature_path')
+        if not self.path:
+            raise Exception('filepath not exist')
         self.features = dict()
         for category in os.listdir(self.path):
-            t = dict()
-            t['hnsw'] = dict()
-            t['pca'] = dict()
-            t['label'] = dict()
-            t['iid'] = dict()
-            self.features[category] = t
+            self.features[category] = Vividict()
         self.load_feature()
 
     def load_feature(self):
-        if not self.path:
-            raise Exception('filepath is required')
-
-        # load fetures
+        version = '1'
         for category in self.features.keys():
-            pca_path = os.path.join(self.path, category, 'pca')
-            for _file in os.listdir(pca_path):
-                file_name = _file.split('.')[0]
-                with open(os.path.join(pca_path, _file), 'rb') as f:
-                    pca = pickle.load(f)
-                    self.features[category]['pca'][file_name] = pca
+            base_path = os.path.join(self.path, category)
+            for co_id in os.listdir(base_path):
+                for item in os.listdir(os.path.join(base_path, co_id, version)):
+                    name = item.split('.')[0]
+                    if  not name == 'hnsw':
+                        with open(os.path.join(base_path, co_id, version, item), 'rb') as f:
+                            p = pickle.load(f)
+                            self.features[category][co_id][name] = p
 
-            iid_path = os.path.join(self.path, category, 'iid')
-            for _file in os.listdir(iid_path):
-                file_name = _file.split('.')[0]
-                with open(os.path.join(iid_path, _file), 'rb') as f:
-                    iid = pickle.load(f)
-                    self.features[category]['iid'][file_name] = iid
-
-            label_path = os.path.join(self.path, category, 'label')
-            for _file in os.listdir(label_path):
-                file_name = _file.split('.')[0]
-                with open(os.path.join(label_path, _file), 'rb') as f:
-                    label = pickle.load(f)
-                    self.features[category]['label'][file_name] = label
-
-            hnsw_path = os.path.join(self.path, category, 'hnsw')
-            for _file in os.listdir(hnsw_path):
-                file_name = _file.split('.')[0]
+            for co_id in os.listdir(base_path):
                 hnsw = hnswlib.Index(
-                    space='cosine', dim=self.features[category]['pca'][file_name].n_components_)
-                hnsw.load_index(os.path.join(hnsw_path, _file),
-                                max_elements=len(self.features[category]['iid'][file_name][0]))
+                    space='cosine', dim=self.features[category][co_id]['pca'].n_components_)
+                hnsw.load_index(os.path.join(base_path, co_id, version, 'hnsw.bin'))
                 hnsw.set_ef(100)
-                self.features[category]['hnsw'][file_name] = hnsw
-
-    def get_hnsw(self, category, co_id):
-        return self.features[category]['hnsw'][co_id]
-
-    def get_pca(self, category, co_id):
-        return self.features[category]['pca'][co_id]
-
-    def get_iid(self, category, co_id):
-        return self.features[category]['iid'][co_id]
-
-    def get_label(self, category, co_id):
-        return self.features[category]['label'][co_id]
+                self.features[category][co_id]['hnsw'] = hnsw
 
     def update_feature(self, category, co_id):
-        pca_path = os.path.join(self.path, category, 'pca', co_id + '.bin')
-        if not os.path.exists(pca_path):
+        version = '1'
+        base_path = os.path.join(self.path, category, co_id, version)
+        if not os.path.exists(base_path):
             raise Exception('feature path not exist')
-        with open(pca_path, 'rb') as f:
-            pca = pickle.load(f)
-            self.features[category]['pca'][co_id] = pca
 
-        iid_path = os.path.join(self.path, category, 'iid', co_id + '.bin')
-        with open(iid_path, 'rb') as f:
-            iid = pickle.load(f)
-            self.features[category]['iid'][co_id] = iid
+        for item in os.listdir(base_path):
+            name = item.split('.')[0]
+            if not name == 'hnsw':
+                with open(os.path.join(base_path, item), 'rb') as f:
+                    p = pickle.load(f)
+                    self.features[category][co_id][name] = p
 
-        label_path = os.path.join(self.path, category, 'label', co_id + '.bin')
-        with open(label_path, 'rb') as f:
-            label = pickle.load(f)
-            self.features[category]['label'][co_id] = label
-
-        hnsw_path = os.path.join(self.path, category, 'hnsw', co_id + '.bin')
         hnsw = hnswlib.Index(
-            space='cosine', dim=self.features[category]['pca'][co_id].n_components_)
-        hnsw.load_index(hnsw_path, max_elements=len(
-            self.features[category]['iid'][co_id][0]))
+            space='cosine', dim=self.features[category][co_id]['pca'].n_components_)
+        hnsw.load_index(os.path.join(base_path, 'hnsw.bin'))
         hnsw.set_ef(100)
-        self.features[category]['hnsw'][co_id] = hnsw
+        self.features[category][co_id]['hnsw'] = hnsw
 
         logging.info(
             'Feature updated, category: {}   co_id: {}'.format(category, co_id))
+
+    def get_hnsw(self, category, co_id):
+        return self.features[category][co_id]['hnsw']
+
+    def get_pca(self, category, co_id):
+        return self.features[category][co_id]['pca']
+
+    def get_iid(self, category, co_id):
+        return self.features[category][co_id]['iid']
+
+    def get_label(self, category, co_id):
+        return self.features[category][co_id]['label']

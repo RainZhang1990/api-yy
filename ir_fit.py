@@ -25,8 +25,8 @@ def load_image(img_paths, batch, queue1, oss_bucket, category, co_id):
             img_stream = BytesIO(oss_bucket.get_object(path).read())
             img = image.open(img_stream)
             if (i-len(img_paths) % batch) % batch == 0:
-                logging.info('{}_{}: images  batch {} sended {:.1f}s'.format(
-                    category, co_id, i // batch, time.time()-t))
+                logging.info('{}_{}: images  batch {} sended {:.1f}s'
+                             .format(category, co_id, i // batch, time.time()-t))
                 t = time.time()
             queue1.put(img)
         queue1.put(0)
@@ -61,13 +61,13 @@ def feature_extract(batch, data_length, tf_serving_ip, tf_serving_port, queue1, 
             if len(imgs) == 0:
                 break
             t = time.time()
-            logging.info('{}_{}: feature extracting batch {} '.format(
-                category, co_id, no))
-            features = get_resnet101_feature_grpc('{}:{}'.format(
-                tf_serving_ip, tf_serving_port), imgs, 10000)
-            # features = get_resnet101_feature_local(imgs)
-            logging.info('{}_{}: feature extracting batch {} finished {:.1f}s '.format(
-                category, co_id, no, time.time()-t))
+            logging.info('{}_{}: feature extracting batch {} '
+                         .format(category, co_id, no))
+            # features = get_resnet101_feature_grpc('{}:{}'.format(
+            #     tf_serving_ip, tf_serving_port), imgs, 10000)
+            features = get_resnet101_feature_local(imgs)
+            logging.info('{}_{}: feature extracting batch {} finished {:.1f}s '
+                         .format(category, co_id, no, time.time()-t))
             queue2.put(features)
         queue2.put(0)
         logging.info(
@@ -92,20 +92,20 @@ def pca_hnsw(pca_n, data_length, queue2, category, co_id):
                     hnsw = hnswlib.Index(space='cosine', dim=n)
                     hnsw.init_index(max_elements=data_length,
                                     ef_construction=100, M=64)
-                feature_list.append(features) 
+                feature_list.append(features)
                 t = time.time()
-                logging.info('{}_{}: pca partial fiting batch {} '.format(
-                    category, co_id, no))
+                logging.info('{}_{}: pca partial fiting batch {} '
+                             .format(category, co_id, no))
                 pca.partial_fit(features)
-                logging.info('{}_{}: pca partial fiting batch {} finished {:.1f}s '.format(category, co_id,
-                                                                                           no, time.time()-t))
+                logging.info('{}_{}: pca partial fiting batch {} finished {:.1f}s '
+                             .format(category, co_id, no, time.time()-t))
             else:
                 break
         t = time.time()
         for f in feature_list:
             hnsw.add_items(pca.transform(f))
-        logging.info('{}_{}: pca hnsw time {:.1f}s '.format(
-            category, co_id, time.time()-t))
+        logging.info('{}_{}: pca hnsw time {:.1f}s '
+                     .format(category, co_id, time.time()-t))
         return pca, hnsw
     except Exception as e:
         logging.critical(
@@ -136,17 +136,21 @@ def fit(save_dir, category, co_id, pca_n, batch, iid, labels, oss_bucket, tf_ser
     p2.join()
 
     logging.info('{}_{}: writing...'.format(category, co_id))
-    path = os.path.join(save_dir, category, 'iid', '{}.bin'.format(co_id))
+    version = '1'
+    base_path = os.path.join(save_dir, category, co_id, version)
+    if not os.path.exists(base_path):
+        os.makedirs(base_path)
+    path = os.path.join(base_path, 'iid.bin')
     pickle.dump((iid, labels), open(path, 'wb'))
-    path = os.path.join(save_dir, category,  'pca', '{}.bin'.format(co_id))
+    path = os.path.join(base_path, 'pca.bin')
     pickle.dump(pca, open(path, 'wb'))
-    path = os.path.join(save_dir, category,  'hnsw', '{}.bin'.format(co_id))
+    path = os.path.join(base_path, 'hnsw.bin')
     hnsw.save_index(path)
-    path = os.path.join(save_dir, category, 'label', '{}.bin'.format(co_id))
+    path = os.path.join(base_path, 'label.bin')
     pickle.dump(sorted(set(labels)), open(path, 'wb'))
 
-    logging.info('{}_{}: irfit total cost {}s'.format(category, co_id,
-                                                      time.time()-t1))
+    logging.info('{}_{}: irfit total cost {}s'
+                 .format(category, co_id, time.time()-t1))
 
 
 def oss_init(oss_bucket, category, co_id):
@@ -192,6 +196,7 @@ def fit_queue(category):
             fit(save_dir, category, co_id, pca_n, batch, iid, labels,
                 oss_bucket, tf_serving_ip, tf_serving_port)
             redis.redis_hset(category, co_id, 'status', 'finished')
+            redis.redis_hset(category, co_id, 'total', len(iid))
             redis.redis_hset(category, co_id, 'etime',
                              time.strftime(time_format, time.localtime()))
             redis.publish('{}_{}'.format(category, co_id))
@@ -206,7 +211,7 @@ def fit_queue(category):
 def main(fit_workers, keep_alive=False):
     for _ in range(fit_workers):
         Process(target=fit_queue, args=('sr',)).start()
-        Process(target=fit_queue, args=('ic',)).start()
+        # Process(target=fit_queue, args=('ic',)).start()
     while keep_alive:
         pass
 
