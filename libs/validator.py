@@ -312,3 +312,7 @@ def ir_category(value):
     category = ['sr', 'ic']
     if not value in category:
         raise ValidationError('category参数异常')
+
+def image_length(value):
+    if len(value) > 512:
+        raise ValidationError('图像超过512张')

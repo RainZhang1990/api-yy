@@ -30,6 +30,7 @@ class ImageRetrivalHandler(APIHandler):
         category = self.post_data.get('category', 'sr')
         try:
             libs.validator.required(imgs)
+            libs.validator.image_length(imgs)
             libs.validator.required(co_id)
             libs.validator.ir_category(category)
 

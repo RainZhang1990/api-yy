@@ -196,7 +196,7 @@ def fit_queue(category):
             fit(save_dir, category, co_id, pca_n, batch, iid, labels,
                 oss_bucket, tf_serving_ip, tf_serving_port)
             redis.redis_hset(category, co_id, 'status', 'finished')
-            redis.redis_hset(category, co_id, 'total', len(iid))
+            redis.redis_hset(category, co_id, 'total', len(set(labels)))
             redis.redis_hset(category, co_id, 'etime',
                              time.strftime(time_format, time.localtime()))
             redis.publish('{}_{}'.format(category, co_id))
