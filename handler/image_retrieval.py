@@ -23,6 +23,7 @@ class ImageRetrivalHandler(APIHandler):
 
     @authenticated_async
     async def post(self):
+        logging.info('{}_{}: ImageRetrival'.format(category, co_id))
         imgs = self.post_data.get('pic', None)
         co_id = self.post_data.get('co_id', None)
         if co_id == None:
@@ -33,12 +34,10 @@ class ImageRetrivalHandler(APIHandler):
             libs.validator.image_length(imgs)
             libs.validator.required(co_id)
             libs.validator.ir_category(category)
-
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
 
-        logging.info('{}_{}: ImageRetrival'.format(category, co_id))
         s1 = time.time()
         img_list = []
         for img_str in imgs:
@@ -47,9 +46,15 @@ class ImageRetrivalHandler(APIHandler):
 
         features = get_resnet101_feature_grpc('{}:{}'.format(
             Config().tf_serving_ip, Config().tf_serving_port), img_list)
-        img_ids, labels = FeatureManager().get_iid(category, co_id)
+
+        iid = FeatureManager().get_iid(category, co_id)
         pca = FeatureManager().get_pca(category, co_id)
         hnsw = FeatureManager().get_hnsw(category, co_id)
+        if iid == None or pca == None or hnswlib == None:
+            self.send_to_client_non_encrypt(
+                404, message='failure', response='使用前请先提交训练')
+            return
+        img_ids, labels = FeatureManager().get_iid(category, co_id)
 
         s2 = time.time()
         img_features = pca.transform(features)
@@ -73,7 +78,7 @@ class ImageRetrivalHandler(APIHandler):
                     url = 'http://{}.{}/{}'.format(
                         Config().oss.get('bucket'), Config().oss.get('endpoint_public'), img_ids[index])
                     tmp_url.append(url)
-                    tmp_similarity.append('{:.2%}'.format(1-distances[i][j]))
+                    tmp_similarity.append('{:.2%}'.format(1-distances[i][j]/2))
             code.append(tmp_code)
             img_url.append(tmp_url)
             similarity.append(tmp_similarity)
@@ -87,6 +92,7 @@ class IrFitHandler(APIHandler):
 
     @authenticated_async
     async def post(self):
+        logging.info('{}_{}: IrFit'.format(category, co_id))
         co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
@@ -97,7 +103,6 @@ class IrFitHandler(APIHandler):
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
 
-        logging.info('{}_{}: IrFit'.format(category, co_id))
         interval = Config().image_retrieval.get('fit_interval')
         time_format = Config().time_format
         fit_status = redis.redis_hgetall(category, co_id)
@@ -122,6 +127,7 @@ class IrLabelHandler(APIHandler):
 
     @authenticated_async
     async def post(self):
+        logging.info('{}_{}: Get IrFitLabel'.format(category, co_id))
         co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
@@ -132,7 +138,6 @@ class IrLabelHandler(APIHandler):
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
 
-        logging.info('{}_{}: Get IrFitLabel'.format(category, co_id))
         result = {'label': FeatureManager().get_label(category, co_id)}
         self.send_to_client_non_encrypt(200, 'success', response=result)
 
@@ -141,6 +146,7 @@ class IrFitStatusHandler(APIHandler):
 
     @authenticated_async
     async def post(self):
+        logging.info('{}_{}: Get IrFitStatus'.format(category, co_id))
         co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
@@ -151,6 +157,5 @@ class IrFitStatusHandler(APIHandler):
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
 
-        logging.info('{}_{}: Get IrFitStatus'.format(category, co_id))
         result = redis.redis_hgetall(category, co_id)
         self.send_to_client_non_encrypt(200, 'success', response=result)
