@@ -69,21 +69,23 @@ class ImageRetrivalHandler(APIHandler):
         logging.info('{}_{}: hnswlib query time:{}'.format(
             category, co_id, time.time()-s3))
 
-        code, img_url, similarity = [], [], []
+        code, img_url, similarity, oss_key = [], [], [], []
         for i, arr in enumerate(indexs):
-            tmp_code, tmp_url, tmp_similarity = [], [], []
+            tmp_code, tmp_url, tmp_similarity, tmp_key = [], [], [], []
             for j, index in enumerate(arr):
                 if not labels[index] in tmp_code:
                     tmp_code.append(labels[index])
                     url = 'http://{}.{}/{}'.format(
                         Config().oss.get('bucket'), Config().oss.get('endpoint_public'), img_ids[index])
                     tmp_url.append(url)
+                    tmp_key.append(img_ids[index])
                     tmp_similarity.append('{:.2%}'.format(1-distances[i][j]/2))
             code.append(tmp_code)
             img_url.append(tmp_url)
             similarity.append(tmp_similarity)
+            oss_key.append(tmp_key)
         logging.info('{}_{}: {}'.format(category, co_id, code))
-        result = {'code': code, 'similarity': similarity, 'url': img_url}
+        result = {'code': code, 'similarity': similarity,'oss_key': oss_key, 'url': img_url}
         self.send_to_client_non_encrypt(
             200, message='success', response=result)
 
