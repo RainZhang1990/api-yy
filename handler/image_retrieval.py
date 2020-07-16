@@ -23,7 +23,6 @@ class ImageRetrivalHandler(APIHandler):
 
     @authenticated_async
     async def post(self):
-        logging.info('{}_{}: ImageRetrival'.format(category, co_id))
         imgs = self.post_data.get('pic', None)
         co_id = self.post_data.get('co_id', None)
         if co_id == None:
@@ -37,6 +36,7 @@ class ImageRetrivalHandler(APIHandler):
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
+        logging.info('{}_{}: ImageRetrival'.format(category, co_id))
 
         s1 = time.time()
         img_list = []
@@ -92,16 +92,15 @@ class IrFitHandler(APIHandler):
 
     @authenticated_async
     async def post(self):
-        logging.info('{}_{}: IrFit'.format(category, co_id))
         co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
             libs.validator.required(co_id)
             libs.validator.ir_category(category)
-
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
+        logging.info('{}_{}: IrFit'.format(category, co_id))
 
         interval = Config().image_retrieval.get('fit_interval')
         time_format = Config().time_format
@@ -127,16 +126,15 @@ class IrLabelHandler(APIHandler):
 
     @authenticated_async
     async def post(self):
-        logging.info('{}_{}: Get IrFitLabel'.format(category, co_id))
         co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
             libs.validator.required(co_id)
             libs.validator.ir_category(category)
-
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
+        logging.info('{}_{}: Get IrFitLabel'.format(category, co_id))
 
         result = {'label': FeatureManager().get_label(category, co_id)}
         self.send_to_client_non_encrypt(200, 'success', response=result)
@@ -146,16 +144,15 @@ class IrFitStatusHandler(APIHandler):
 
     @authenticated_async
     async def post(self):
-        logging.info('{}_{}: Get IrFitStatus'.format(category, co_id))
         co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
             libs.validator.required(co_id)
             libs.validator.ir_category(category)
-
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
+        logging.info('{}_{}: Get IrFitStatus'.format(category, co_id))
 
         result = redis.redis_hgetall(category, co_id)
         self.send_to_client_non_encrypt(200, 'success', response=result)

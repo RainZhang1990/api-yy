@@ -181,6 +181,7 @@ def fit_queue(category):
     oss_bucket = oss.oss_bucket
 
     while True:
+        co_id=''
         try:
             switch = redis.redis_get('ir', 'fit_switch')
             co_id = redis.redis_rpop('ir', category)
