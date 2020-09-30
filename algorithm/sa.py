@@ -44,10 +44,10 @@ class SA(object):
             if count > self.qt:
                 break
         end=time.time()
-        labels('param:cx:{},it:{},qt:{}'.format(self.cx,self.it,self.qt))
-        labels('time:{}s'.format(end-start))
-        labels('target:{}'.format(self.cj(old_comm_list)))
-        labels(old_comm_list)
+        print('param:cx:{},it:{},qt:{}'.format(self.cx,self.it,self.qt))
+        print('time:{}s'.format(end-start))
+        print('target:{}'.format(self.cj(old_comm_list)))
+        print(old_comm_list)
 
         return count,self.cj(old_comm_list),old_comm_list
 

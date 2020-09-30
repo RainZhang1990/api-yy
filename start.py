@@ -13,7 +13,7 @@ import core
 import ir_fit
 from core import redis,oss,config
 from core.config import Config
-from handler import app,order_batch,image_retrieval
+from handler import app,order_batch,image_retrieval,relevance
 
 
 def make_app():
@@ -27,8 +27,8 @@ def make_app():
 
     handlers = [
         url(r"/test", app.TestHandler, name='app.test'),
-        url(r"/algorithm/orderbatch", order_batch.OrderBatchLPHandler, name='orderbatch'),
-        url(r"/algorithm/spuretrieval",image_retrieval.ImageRetrivalHandler, name='spuretrieval'),   # 临时
+        url(r"/algorithm/warehouse/orderbatch", order_batch.OrderBatchLPHandler, name='orderbatch'),
+        url(r"/algorithm/order/relevance", relevance.RelevanceHandler, name='relevance'),
         url(r"/algorithm/imageretrieval/test",image_retrieval.IndexHandler, name='IrTest'),
         url(r"/algorithm/imageretrieval/imageretrieval",image_retrieval.ImageRetrivalHandler, name='ImageRetrieval'),
         url(r"/algorithm/imageretrieval/fit",image_retrieval.IrFitHandler, name='IrFit'),
@@ -77,12 +77,12 @@ def init_options():
 
 
 if __name__ == '__main__':
+    logging.getLogger().setLevel(logging.INFO)
     config.init()
     redis.init()
     redis.listen()
-    # oss.init()
+    oss.init()
     init_options()
-    workers = Config().image_retrieval.get('fit_workers')
-    ir_fit.main(workers)
+    ir_fit.main(Config().image_retrieval.get('fit_workers'))
     main()
  

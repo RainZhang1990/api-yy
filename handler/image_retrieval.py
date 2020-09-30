@@ -75,8 +75,9 @@ class ImageRetrivalHandler(APIHandler):
             for j, index in enumerate(arr):
                 if not labels[index] in tmp_code:
                     tmp_code.append(labels[index])
-                    url = 'http://{}.{}/{}'.format(
-                        Config().oss.get('bucket'), Config().oss.get('endpoint_public'), img_ids[index])
+                    url=oss.oss_bucket.sign_url('GET',img_ids[index],3600)
+                    # url = 'http://{}.{}/{}'.format(
+                    #     Config().oss.get('bucket'), Config().oss.get('endpoint_public'), img_ids[index])
                     tmp_url.append(url)
                     tmp_key.append(img_ids[index])
                     tmp_similarity.append('{:.2%}'.format(1-distances[i][j]/2))

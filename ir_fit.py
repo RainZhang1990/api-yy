@@ -183,15 +183,18 @@ def fit_queue(category):
     while True:
         co_id=''
         try:
-            switch = redis.redis_get('ir', 'fit_switch')
+            switch = redis.redis_get('ir', 'fit_switch') # 训练开关
+            if switch == 0:
+                time.sleep(retry_interval)
+                continue
             co_id = redis.redis_rpop('ir', category)
-            if switch == 0 or co_id == None:
+            if co_id == None:
                 time.sleep(retry_interval)
                 continue
             redis.redis_hset(category, co_id, 'status', 'fitting')
             redis.redis_hset(category, co_id, 'stime',
                              time.strftime(time_format, time.localtime()))
-            labels, iid, = oss_init(oss_bucket, category, co_id)
+            labels, iid, = oss_init(oss_bucket, category, co_id) # 获取全部图像信息
             if len(iid) == 0:
                 raise Exception('oss image empty')
             fit(save_dir, category, co_id, pca_n, batch, iid, labels,
@@ -204,16 +207,22 @@ def fit_queue(category):
         except Exception as e:
             logging.critical(
                 '{}_{}: fit error, {}'.format(category, co_id, e))
-            redis.redis_hset(category, co_id, 'status', 'failed')
-            redis.redis_hset(category, co_id, 'etime',
-                             time.strftime(time_format, time.localtime()))
+            try:
+                redis.redis_hset(category, co_id, 'status', 'failed')
+                redis.redis_hset(category, co_id, 'etime',
+                                time.strftime(time_format, time.localtime()))
+            except Exception as e1:
+                logging.critical(
+                    '{}_{}: fit status recover error, {}'.format(category, co_id, e))
+            time.sleep(retry_interval)
+            
 
 
 def main(fit_workers, keep_alive=False):
     for _ in range(fit_workers):
         Process(target=fit_queue, args=('sr',)).start()
         Process(target=fit_queue, args=('ic',)).start()
-    while keep_alive:
+    while keep_alive:  # 待定
         pass
 
 
@@ -221,5 +230,4 @@ if __name__ == "__main__":
     config.init()
     workers = Config().image_retrieval.get('fit_workers')
     main(workers, True)
-    # co_info = {'taotao': '10016905', 'leige': '10097386',
-    #            'yulu': '10054631', 'aozi': '10051865'}
+
