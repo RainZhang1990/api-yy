@@ -29,10 +29,10 @@ class ImageRetrivalHandler(APIHandler):
             co_id = self.post_data.get('custom_id', None)
         category = self.post_data.get('category', 'sr')
         try:
-            libs.validator.required(imgs)
-            libs.validator.image_length(imgs)
-            libs.validator.required(co_id)
-            libs.validator.ir_category(category)
+            libs.validator.required(imgs, 'imgs')
+            libs.validator.length(imgs, 'imgs')
+            libs.validator.required(co_id, 'co_id')
+            libs.validator.choices(category, ['sr', 'ic'], 'category')
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
@@ -62,12 +62,9 @@ class ImageRetrivalHandler(APIHandler):
             category, co_id, time.time()-s2))
 
         s3 = time.time()
-        query_k = min(Config().image_retrieval.get('query_k'), len(labels))
-        if category == 'ic':
-            query_k = 1
+        query_k = min(Config().image_retrieval.get('query_k'), len(labels)) if category == 'sr' else 1
         indexs, distances = hnsw.knn_query(img_features, k=query_k)
-        logging.info('{}_{}: hnswlib query time:{}'.format(
-            category, co_id, time.time()-s3))
+        logging.info('{}_{}: hnswlib query time:{}'.format(category, co_id, time.time()-s3))
 
         code, img_url, similarity, oss_key = [], [], [], []
         for i, arr in enumerate(indexs):
@@ -76,8 +73,6 @@ class ImageRetrivalHandler(APIHandler):
                 if not labels[index] in tmp_code:
                     tmp_code.append(labels[index])
                     url=oss.oss_bucket.sign_url('GET',img_ids[index],3600)
-                    # url = 'http://{}.{}/{}'.format(
-                    #     Config().oss.get('bucket'), Config().oss.get('endpoint_public'), img_ids[index])
                     tmp_url.append(url)
                     tmp_key.append(img_ids[index])
                     tmp_similarity.append('{:.2%}'.format(1-distances[i][j]/2))
@@ -87,8 +82,7 @@ class ImageRetrivalHandler(APIHandler):
             oss_key.append(tmp_key)
         logging.info('{}_{}: {}'.format(category, co_id, code))
         result = {'code': code, 'similarity': similarity,'oss_key': oss_key, 'url': img_url}
-        self.send_to_client_non_encrypt(
-            200, message='success', response=result)
+        self.send_to_client_non_encrypt(200, message='success', response=result)
 
 
 class IrFitHandler(APIHandler):
@@ -98,8 +92,8 @@ class IrFitHandler(APIHandler):
         co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
-            libs.validator.required(co_id)
-            libs.validator.ir_category(category)
+            libs.validator.required(co_id, 'co_id')
+            libs.validator.choices(category, ['sr', 'ic'], 'category')
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
@@ -132,8 +126,8 @@ class IrLabelHandler(APIHandler):
         co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
-            libs.validator.required(co_id)
-            libs.validator.ir_category(category)
+            libs.validator.required(co_id, 'co_id')
+            libs.validator.choices(category, ['sr', 'ic'], 'category')
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
@@ -150,8 +144,8 @@ class IrFitStatusHandler(APIHandler):
         co_id = self.post_data.get('co_id', None)
         category = self.post_data.get('category', None)
         try:
-            libs.validator.required(co_id)
-            libs.validator.ir_category(category)
+            libs.validator.required(co_id, 'co_id')
+            libs.validator.choices(category, ['sr', 'ic'], 'category')
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return

@@ -27,8 +27,9 @@ def make_app():
 
     handlers = [
         url(r"/test", app.TestHandler, name='app.test'),
-        url(r"/algorithm/warehouse/orderbatch", order_batch.OrderBatchLPHandler, name='orderbatch'),
-        url(r"/algorithm/order/relevance", relevance.RelevanceHandler, name='relevance'),
+        url(r"/algorithm/warehouse/orderbatchan", order_batch.OrderBatchAnHandler, name='OrderBatchAn'),
+        url(r"/algorithm/warehouse/orderbatchsn", order_batch.OrderBatchSnHandler, name='OrderBatchSn'),
+        url(r"/algorithm/order/relevance", relevance.RelevanceHandler, name='Relevance'),
         url(r"/algorithm/imageretrieval/test",image_retrieval.IndexHandler, name='IrTest'),
         url(r"/algorithm/imageretrieval/imageretrieval",image_retrieval.ImageRetrivalHandler, name='ImageRetrieval'),
         url(r"/algorithm/imageretrieval/fit",image_retrieval.IrFitHandler, name='IrFit'),
