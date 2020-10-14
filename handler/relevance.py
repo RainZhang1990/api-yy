@@ -22,6 +22,6 @@ class RelevanceHandler(APIHandler):
             return
 
         logging.info('relevance  co_id: {} dim: {} top: {}'.format(co_id, dim, top))
-        result = relevance_async(order_src, dim, top)
+        result = {'items': relevance_async(order_src, dim, top)}
         self.send_to_client_non_encrypt(
                 200, message='success', response=result)

@@ -43,7 +43,7 @@ def relevance_async(order_src, dim, top):
             total_count[k]+=v
     logging.info('step3:{}'.format(time.strftime('%Y-%m-%d %H:%M:%S')))
     t_list=sorted(total_count.keys(), key= lambda k: total_count[k], reverse=True)
-    return [[k,total_count[k]] for k in t_list[:top]]
+    return [{' '.join(k):total_count[k]} for k in t_list[:top]]
 
 def relevance_validate(order_src, result):
     for c in result:
