@@ -112,7 +112,7 @@ class Sn():
 
         left = sum([len(h.order_set) for h in heaps])
         covered = len(order_joined)-left
-        info = 'ob_sn  epoch：{} batch_qty: {} heap_qty: {} covered: {} rate: {:.1%}total: {} order_joined: {} left:{}'.format(
+        info = 'ob_sn  epoch：{} batch_qty: {} heap_qty: {} covered: {} rate: {:.1%} total: {} order_joined: {} left:{}'.format(
             epoch, batch_qty,self.heap_qty, covered, covered/self.order_qty, self.order_qty, len(order_joined), left)
         logging.info(info)
         return batch_sn, second_sn

@@ -36,7 +36,9 @@ def ob_an(order_src: dict, min_batch_amount):
     order_src:订单明细，以 dictionary<string,dictionary<string,int>> 的方式传入.
     min_batch_amount:最小批次数量
     """
-    logging.info('step1:{}'.format(time.strftime('%Y-%m-%d %H:%M:%S')))
+
+    time_format = '%Y-%m-%d %H:%M:%S'
+    logging.info('step1:{}'.format(time.strftime(time_format)))
     order_distinct = order_src.keys()
     model = pulp.LpProblem("OrderGrouping", pulp.LpMaximize)
 
@@ -75,12 +77,12 @@ def ob_an(order_src: dict, min_batch_amount):
         [[v for v in val.values()] for val in vd_order.values()]
     )
 
-    logging.info('step2:{}'.format(time.strftime('%Y-%m-%d %H:%M:%S')))
+    logging.info('step2:{}'.format(time.strftime(time_format)))
 
     for order in order_distinct:
         model += pulp.lpSum([val for val in vd_order[order].values()]) <= 1
 
-    logging.info('step3:{}'.format(time.strftime('%Y-%m-%d %H:%M:%S')))
+    logging.info('step3:{}'.format(time.strftime(time_format)))
 
     for cate in category_distinct:
         model += pulp.lpSum([val for val in vd_cate[cate].values()]
@@ -88,7 +90,7 @@ def ob_an(order_src: dict, min_batch_amount):
         model += pulp.lpSum([val for val in vd_cate[cate].values()]
                             ) <= 0+M*(1-dm[cate])
 
-    logging.info('step4:{}'.format(time.strftime('%Y-%m-%d %H:%M:%S')))
+    logging.info('step4:{}'.format(time.strftime(time_format)))
 
     model.solve()
     # model.solve(pulp.solvers.PULP_CBC_CMD(maxSeconds=30))
@@ -100,15 +102,15 @@ def ob_an(order_src: dict, min_batch_amount):
     covered = int(pulp.value(model.objective))
     result['covered'] = covered
     result['rate'] = '{:.1%}'.format(covered/len(order_src))
-    
+
     items = []
     for i, cate in enumerate(vd_cate.keys()):
         for order, var in vd_cate[cate].items():
             if (var.varValue == 1):
                 items.append({'order': order, 'category': cate, 'no': i})
     result['items'] = items
-    
-    logging.info('step5:{}'.format(time.strftime('%Y-%m-%d %H:%M:%S')))
+
+    logging.info('step5:{}'.format(time.strftime(time_format)))
     logging.info("lpstatus: {} covered: {} rate: {} total: {}".format(
         result['lpstatus'], result['covered'], result['rate'], len(order_src)))
 

@@ -22,7 +22,8 @@ def relevance(order_src, dim, top):
     return {k:combo_count[k]  for k in c_list[:top*10]}
 
 def relevance_async(order_src, dim, top):
-    logging.info('step1:{}'.format(time.strftime('%Y-%m-%d %H:%M:%S')))
+    time_format = '%Y-%m-%d %H:%M:%S'
+    logging.info('step1:{}'.format(time.strftime(time_format)))
     cores = min(mp.cpu_count(), Config().relevance_workers, len(order_src)//10000+1)
     process_pool = Pool(cores)
     process_list = []
@@ -31,7 +32,7 @@ def relevance_async(order_src, dim, top):
         core_list = order_src[core_amount*i:core_amount*(i+1)]
         p = process_pool.apply_async(relevance, args=(core_list, dim, top,))
         process_list.append(p)
-    logging.info('step2:{}'.format(time.strftime('%Y-%m-%d %H:%M:%S')))
+    logging.info('step2:{}'.format(time.strftime(time_format)))
     process_pool.close()
     process_pool.join()
     total_count = {}
@@ -41,7 +42,7 @@ def relevance_async(order_src, dim, top):
             if not k in total_count:
                 total_count[k]=0
             total_count[k]+=v
-    logging.info('step3:{}'.format(time.strftime('%Y-%m-%d %H:%M:%S')))
+    logging.info('step3:{}'.format(time.strftime(time_format)))
     t_list=sorted(total_count.keys(), key= lambda k: total_count[k], reverse=True)
     return [{' '.join(k):total_count[k]} for k in t_list[:top]]
 
