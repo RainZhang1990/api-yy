@@ -25,8 +25,6 @@ class ImageRetrivalHandler(APIHandler):
     async def post(self):
         imgs = self.post_data.get('pic', None)
         co_id = self.post_data.get('co_id', None)
-        if co_id == None:
-            co_id = self.post_data.get('custom_id', None)
         category = self.post_data.get('category', 'sr')
         try:
             libs.validator.required(imgs, 'imgs')

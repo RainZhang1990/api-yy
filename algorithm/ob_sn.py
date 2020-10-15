@@ -11,12 +11,10 @@ class OrderHeap():
         self.order_set = order_set
         self.sku_set = sku_set
 
-
 class planar_dict(dict):
     def __missing__(self, key):
         value = self[key] = type(self)()
         return value
-
 
 class Sn():
     def __init__(self, order_src: dict, second_n, min_batch, max_batch, heap_qty):
