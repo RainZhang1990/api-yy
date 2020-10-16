@@ -98,29 +98,6 @@ def move(comm_list,new_comm_list,a,b):
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-
-    conn=connect(host='47.110.133.110', port=3389)
-    # conn = connect(host='10.0.130.7', port=4000)
-    cur=conn.cursor()
-    sqlCommDist='''WITH bin_id AS (
-                    SELECT sku1,row_number() over(ORDER BY sku1 ) -1 id FROM
-                    (SELECT DISTINCT sku1 FROM tmp.pick_model_estimate_3 WHERE  version=4 ) a
-                    )
-                    SELECT q.id,r.id,p.move_cost FROM tmp.pick_model_estimate_3 p LEFT JOIN bin_id q ON p.sku1=q.sku1 LEFT JOIN bin_id	r ON p.sku2=r.sku1 WHERE  p.version=4 and q.id<200 and r.id<200 limit 10000000'''
-    cur.execute(sqlCommDist)
-    CommDist=cur.fetchall()
-    conn.close()
-
-    k=200
-    comm_list=np.arange(k)
-    np_dist=np.zeros([k,k],dtype=float)
-    for cd in CommDist:
-        np_dist[int(cd[0]),int(cd[1])]=float(cd[2])
-        np_dist[int(cd[1]),int(cd[0])]=float(cd[2])
-
-    # for i in range(k):
-    #     for j in range(k):
-    #         np_dist[i,j]=i+j
     start=time.time()
     res=get_route(comm_list,np_dist,tmax=1000,tmin=0.0001,cx=0.9,it=20000,qt=20000)
     labels(res)

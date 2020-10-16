@@ -213,7 +213,7 @@ def fit_queue(category):
                                 time.strftime(time_format, time.localtime()))
             except Exception as e1:
                 logging.critical(
-                    '{}_{}: fit status recover error, {}'.format(category, co_id, e))
+                    '{}_{}: fit status recover error, {}'.format(category, co_id, e1))
             time.sleep(retry_interval)
             
 
@@ -222,8 +222,8 @@ def main(fit_workers, keep_alive=False):
     for _ in range(fit_workers):
         Process(target=fit_queue, args=('sr',)).start()
         Process(target=fit_queue, args=('ic',)).start()
-    while keep_alive:  # 待定
-        pass
+    while keep_alive:  
+        time.sleep(10**10)
 
 
 if __name__ == "__main__":
