@@ -9,7 +9,7 @@ from core.config import Config
 from .api import authenticated_async
 from libs import zbase62
 import algorithm.ob_an
-from algorithm.ob_sn import Sn
+from algorithm.ob_sn import *
 
 
 class OrderBatchAnHandler(APIHandler):
@@ -38,31 +38,30 @@ class OrderBatchAnHandler(APIHandler):
             self.send_to_client_non_encrypt(
                 200, message='success', response=result)
 
+
 class OrderBatchSnHandler(APIHandler):
 
     @authenticated_async
     async def post(self):
         co_id = self.post_data.get('co_id', None)
         order_src = self.post_data.get("order_src")
-        second_n = self.post_data.get("second_n")
+        sku_bin = self.post_data.get("sku_bin")
+        second_qty = self.post_data.get("second_qty")
         min_batch = self.post_data.get("min_batch")
-        max_batch = self.post_data.get("max_batch")
-        heap_qty = self.post_data.get("heap_qty")
         try:
             libs.validator.required(co_id, 'co_id')
             libs.validator.order_for_grouping(order_src, 'order_src')
-            libs.validator.integer(second_n, 'second_n', 1, 100)
-            libs.validator.integer(min_batch, 'min_batch', 1, 200)
-            libs.validator.integer(max_batch, 'max_batch', min_batch, 200)
-            libs.validator.integer(heap_qty, 'heap_qty', 5, 500)
+            libs.validator.dict_str(sku_bin, 'sku_bin')
+            libs.validator.integer(second_qty, 'second_qty', 1, 100)
+            libs.validator.integer(min_batch, 'min_batch', 1, 500)
         except libs.validator.ValidationError as e:
             self.send_to_client_non_encrypt(400, message=e.__str__())
             return
 
-        logging.info('ob_sn  co_id: {} second_n: {} min_batch: {} max_batch: {} heap_qty: {}'
-            .format(co_id, second_n,min_batch, max_batch, heap_qty))
-        sn=Sn(order_src, second_n, min_batch, max_batch, heap_qty)
-        batch_sn, second_sn = sn.fit()
-        
+        logging.info('ob_sn  co_id: {} second_qty: {} min_batch: {} order_qty: {} bin_qty: {}'
+                     .format(co_id, second_qty, min_batch, len(order_src), len(sku_bin)))
+        covered, batch_sn, second_sn = ob_sn_parallel(
+            order_src, sku_bin, dict(), second_qty, min_batch, 10000)
+
         self.send_to_client_non_encrypt(200, message='success',
-                                        response={'batch_sn': batch_sn, 'second_sn': second_sn})
+                                        response={'covered': covered, 'batch_sn': batch_sn, 'second_sn': second_sn})

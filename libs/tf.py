@@ -27,7 +27,7 @@ def get_resnet101_feature_grpc(url,imgs,timeout=20):
     request.inputs['input_1'].CopyFrom(tf.make_tensor_proto(img_data))
     s1=time.time()
     response=stub.Predict(request,timeout)
-    logging.info('data copy time:{}  inference time:{}'.format(s1-s0,time.time()-s1))
+    logging.info('data copy time:{:.4f}s  inference time:{:.4f}s'.format(s1-s0,time.time()-s1))
     features=np.asarray(response.outputs['conv5_block3_out'].float_val)
     features=np.reshape(features,(len(img_data),-1))
     return features

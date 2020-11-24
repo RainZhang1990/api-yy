@@ -14,7 +14,7 @@ from tornado.web import HTTPError, RequestHandler
 
 from core import redis as rd
 from core.config import Config
-from core.server_status import get_server_status
+# from core.server_status import get_server_status
 # from microserver.pb import pbaccount_pb2
 # from microserver.server.account import AccountServer
 # from model.account import Account

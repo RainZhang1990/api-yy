@@ -25,7 +25,7 @@ def load_image(img_paths, batch, queue1, oss_bucket, category, co_id):
             img_stream = BytesIO(oss_bucket.get_object(path).read())
             img = image.open(img_stream)
             if (i-len(img_paths) % batch) % batch == 0:
-                logging.info('{}_{}: images  batch {} sended {:.1f}s'
+                logging.info('{}_{}: images  batch {} sended {:.2f}s'
                              .format(category, co_id, i // batch, time.time()-t))
                 t = time.time()
             queue1.put(img)
@@ -66,7 +66,7 @@ def feature_extract(batch, data_length, tf_serving_ip, tf_serving_port, queue1, 
             features = get_resnet101_feature_grpc('{}:{}'.format(
                 tf_serving_ip, tf_serving_port), imgs, 10000)
             # features = get_resnet101_feature_local(imgs)
-            logging.info('{}_{}: feature extracting batch {} finished {:.1f}s '
+            logging.info('{}_{}: feature extracting batch {} finished {:.2f}s '
                          .format(category, co_id, no, time.time()-t))
             queue2.put(features)
         queue2.put(0)
@@ -97,7 +97,7 @@ def pca_hnsw(pca_n, data_length, queue2, category, co_id):
                 logging.info('{}_{}: pca partial fiting batch {} '
                              .format(category, co_id, no))
                 pca.partial_fit(features)
-                logging.info('{}_{}: pca partial fiting batch {} finished {:.1f}s '
+                logging.info('{}_{}: pca partial fiting batch {} finished {:.2f}s '
                              .format(category, co_id, no, time.time()-t))
             else:
                 break

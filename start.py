@@ -78,7 +78,6 @@ def init_options():
 
 
 if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.INFO)
     config.init()
     redis.init()
     redis.listen()

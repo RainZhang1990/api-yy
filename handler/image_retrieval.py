@@ -56,13 +56,13 @@ class ImageRetrivalHandler(APIHandler):
 
         s2 = time.time()
         img_features = pca.transform(features)
-        logging.info('{}_{}: pca transform time:{}'.format(
+        logging.info('{}_{}: pca transform time:{:.4f}s'.format(
             category, co_id, time.time()-s2))
 
         s3 = time.time()
         query_k = min(Config().image_retrieval.get('query_k'), len(labels)) if category == 'sr' else 1
         indexs, distances = hnsw.knn_query(img_features, k=query_k)
-        logging.info('{}_{}: hnswlib query time:{}'.format(category, co_id, time.time()-s3))
+        logging.info('{}_{}: hnswlib query time:{:.4f}s'.format(category, co_id, time.time()-s3))
 
         code, img_url, similarity, oss_key = [], [], [], []
         for i, arr in enumerate(indexs):

@@ -23,6 +23,12 @@ def integer(value, var_name, min_value=None, max_value=None):
     if max_value and value > max_value:
         raise ValidationError('{} 应不大于{}'.format(var_name, max_value))
 
+def dict_str(value, var_name):
+    try:
+        Schema({str:str}).validate(value)
+    except:
+        raise ValidationError('{} 应为Dict<string,string>类型}'.format(var_name))
+
 
 def length(value, var_name, min_length=None, max_length=None):
     l=len(value)

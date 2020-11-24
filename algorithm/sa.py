@@ -2,9 +2,7 @@ import math
 import random
 import copy
 import time
-import utilities.collection as uc
 import logging
-from impala.dbapi import connect
 from multiprocessing import Process, Pool
 import multiprocessing as mp
 import profile

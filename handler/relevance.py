@@ -2,7 +2,7 @@ import logging
 import libs.validator
 from handler.api import APIHandler
 from .api import authenticated_async
-from algorithm.relevance import relevance_async
+from algorithm.relevance import relevance_parallel
 
 class RelevanceHandler(APIHandler):
 
@@ -22,6 +22,6 @@ class RelevanceHandler(APIHandler):
             return
 
         logging.info('relevance  co_id: {} dim: {} top: {}'.format(co_id, dim, top))
-        result = {'items': relevance_async(order_src, dim, top)}
+        result = {'items': relevance_parallel(order_src, dim, top)}
         self.send_to_client_non_encrypt(
                 200, message='success', response=result)

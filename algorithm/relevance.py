@@ -21,9 +21,8 @@ def relevance(order_src, dim, top):
     c_list=sorted(combo_count.keys(), key= lambda k: combo_count[k], reverse=True)
     return {k:combo_count[k]  for k in c_list[:top*10]}
 
-def relevance_async(order_src, dim, top):
-    time_format = '%Y-%m-%d %H:%M:%S'
-    logging.info('step1:{}'.format(time.strftime(time_format)))
+def relevance_parallel(order_src, dim, top):
+    t1=time.time()
     cores = min(mp.cpu_count(), Config().relevance_workers, len(order_src)//10000+1)
     process_pool = Pool(cores)
     process_list = []
@@ -32,7 +31,6 @@ def relevance_async(order_src, dim, top):
         core_list = order_src[core_amount*i:core_amount*(i+1)]
         p = process_pool.apply_async(relevance, args=(core_list, dim, top,))
         process_list.append(p)
-    logging.info('step2:{}'.format(time.strftime(time_format)))
     process_pool.close()
     process_pool.join()
     total_count = {}
@@ -42,11 +40,11 @@ def relevance_async(order_src, dim, top):
             if not k in total_count:
                 total_count[k]=0
             total_count[k]+=v
-    logging.info('step3:{}'.format(time.strftime(time_format)))
     t_list=sorted(total_count.keys(), key= lambda k: total_count[k], reverse=True)
+    logging.info('relevance_parallel time:{:.3f}s cores:{} orders:{}'.format(time.time()-t1, cores, len(order_src)))
     return [{' '.join(k):total_count[k]} for k in t_list[:top]]
 
-def relevance_validate(order_src, result):
+def relevance_test(order_src, result):
     for c in result:
         n=0
         for sku_set in order_src.values():
@@ -68,8 +66,8 @@ if __name__ == "__main__":
         #     break
 
     t1 = time.time()
-    result=relevance_async(list(order_src.values()), 2, 100)
-    # relevance_validate(order_src, result)
+    result=relevance_parallel(list(order_src.values()), 2, 100)
+    # relevance_test(order_src, result)
     t2 = time.time()
     print(result)
     print('{:.2f}s'.format(t2-t1))
