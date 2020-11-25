@@ -12,10 +12,9 @@ def init():
     global redis_pool
     global chan_sub
     redis_pool = redis.ConnectionPool(host=Config().redis.get('host'), port=Config().redis.get('port'),
-                                      password=Config().redis.get('password'),
-                                      db=Config().redis.get('db'),
-                                      decode_responses=True, # byte -> string
-                                      max_connections=Config().redis.get('max_connections'))
+        password=Config().redis.get('password'),db=Config().redis.get('db'),
+        decode_responses=True, # byte -> string
+        max_connections=Config().redis.get('max_connections'))
     chan_sub = Config().redis.get('chan_sub')
 
 def listen():

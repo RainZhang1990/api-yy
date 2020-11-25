@@ -54,31 +54,32 @@ class SN():
                     total_sku_qty[sku] = qty
 
         self.sku_list = sorted(total_sku_qty.keys(),
-                               key=lambda k:total_sku_qty[k], reverse=True)  # sku销量降序
+                               key=lambda k: total_sku_qty[k], reverse=True)  # sku销量降序
         for i, v in enumerate(self.sku_list):
             self.sku_index[v] = i
         self.sku_bin = {
-            self.sku_index[k]:v for k, v in self.sku_bin_src.items() if k in self.sku_index}
+            self.sku_index[k]: v for k, v in self.sku_bin_src.items() if k in self.sku_index}
 
-        for i, order in enumerate(self.order_list): # 去掉一个sku
+        for i, order in enumerate(self.order_list):  # 去掉一个sku
             self.order_index[order] = i
             sku_tmp, sku_set = [], set()
             for sku, qty in self.order_src[order].items():
                 sku_index = self.sku_index[sku]
-                sku_tmp.append((sku_index, qty, self.sku_vol_prior.get(sku, 0)))
+                sku_tmp.append(
+                    (sku_index, qty, self.sku_vol_prior.get(sku, 0)))
                 sku_set.add(sku_index)
 
             self.order_encoded[i] = copy.deepcopy(sku_set)
 
             sku_sorted = sorted(
-                sku_tmp, key=lambda sku:(sku[1], -sku[2], -sku[0]))
+                sku_tmp, key=lambda sku: (sku[1], -sku[2], -sku[0]))
             if sku_sorted[0][1] == 1 and len(sku_sorted) > 1:
                 sku_set.remove(sku_sorted[0][0])
 
             self.order_encoded_s[i] = sku_set
 
     def fit(self):
-        t1=time.time()
+        t1 = time.time()
         epoch, batch_qty_old, batch_qty_new, heap_qty, order_joined, heaps = 0, \
             -1, 0, self.heap_qty, set(), []
         while batch_qty_new > batch_qty_old or epoch < 5:
@@ -89,16 +90,17 @@ class SN():
                 sku_set_s = self.order_encoded_s[order]
                 bin_set = self.get_bin(self.order_encoded[order])
                 min_index, min_val = None, math.inf
-                for i, v in enumerate(heaps): # 最小增量堆
+                for i, v in enumerate(heaps):  # 最小增量堆
                     new_len_s = len(sku_set_s | v.sku_set_s)
                     new_len_bin = len(bin_set | v.bin_set)
                     if new_len_s <= self.second_qty and new_len_bin <= self.max_bin_area:
-                        d = (new_len_s-len(v.sku_set_s)) * 2 + new_len_bin - len(v.bin_set)
+                        d = (new_len_s-len(v.sku_set_s)) * \
+                            2 + new_len_bin - len(v.bin_set)
                         if d < min_val:
                             min_index, min_val = i, d
                             if d == 0:
                                 break
-                if min_val <= epoch: # 加入堆
+                if min_val <= epoch:  # 加入堆
                     min_heap = heaps[min_index]
                     min_heap.sku_set_s |= sku_set_s
                     min_heap.bin_set |= bin_set
@@ -108,13 +110,13 @@ class SN():
                         heap_qty += 1
                         batch_qty_new += 1
 
-                elif len(heaps) < heap_qty and len(sku_set_s) <= self.second_qty and len(bin_set) <= self.max_bin_area: # 新建堆
+                elif len(heaps) < heap_qty and len(sku_set_s) <= self.second_qty and len(bin_set) <= self.max_bin_area:  # 新建堆
                     heaps.append(OrderHeap({order}, copy.deepcopy(
                         sku_set_s), copy.deepcopy(bin_set)))
                     order_joined.add(order)
             epoch += 1
 
-        for small_heap in heaps: # 合并堆
+        for small_heap in heaps:  # 合并堆
             if len(small_heap.order_set) < self.min_batch:
                 for order in small_heap.order_set:
                     sku_set_s = self.order_encoded_s[order]
@@ -130,7 +132,7 @@ class SN():
                                 break
 
         batch_sn, second_sn, bin_sn = [], [], []
-        for heap in heaps: # 订单解析
+        for heap in heaps:  # 订单解析
             _len = len(heap.order_set)
             if _len >= self.min_batch:
                 batch_sn.append([self.order_list[iorder]
@@ -181,7 +183,7 @@ def ob_sn(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  max_bin_are
 
 
 def ob_sn_parallel(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  max_bin_area):
-    t1=time.time()
+    t1 = time.time()
     heap_qty = Config().sn.get('heap_qty')
     cores = min(mp.cpu_count(), Config().sn.get('fit_workers'), len(heap_qty))
     process_pool = Pool(cores)
@@ -200,7 +202,8 @@ def ob_sn_parallel(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  ma
             max_batch_sn = batch_sn
             max_second_sn = second_sn
 
-    logging.info('ob_sn_parallel time:{:.2f}s cores:{} heap_qty:{}'.format(time.time()-t1, cores, heap_qty))
+    logging.info('ob_sn_parallel time:{:.2f}s cores:{} heap_qty:{}'.format(
+        time.time()-t1, cores, heap_qty))
     return max_covered, max_batch_sn, max_second_sn
 
 
@@ -229,7 +232,7 @@ if __name__ == "__main__":
     t1 = time.time()
     for i in range(20):
         covered, batch_sn, second_sn, bin_sn = ob_sn(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,
-                max_bin_area, heap_qty=i*5+10)
+                                                     max_bin_area, heap_qty=i*5+10)
         sn_test(order_src, sku_bin, sku_vol_prior, batch_sn, second_sn, bin_sn, second_qty,
                 min_batch,  max_bin_area)
     t2 = time.time()

@@ -221,7 +221,7 @@ def fit_queue(category):
 def main(fit_workers, keep_alive=False):
     for _ in range(fit_workers):
         Process(target=fit_queue, args=('sr',)).start()
-        Process(target=fit_queue, args=('ic',)).start()
+        # Process(target=fit_queue, args=('ic',)).start()
     while keep_alive:  
         time.sleep(10**10)
 

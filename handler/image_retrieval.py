@@ -48,7 +48,7 @@ class ImageRetrivalHandler(APIHandler):
         iid = FeatureManager().get_iid(category, co_id)
         pca = FeatureManager().get_pca(category, co_id)
         hnsw = FeatureManager().get_hnsw(category, co_id)
-        if iid == None or pca == None or hnswlib == None:
+        if not iid or not pca or not hnswlib:
             self.send_to_client_non_encrypt(
                 404, message='failure', response='使用前请先提交训练')
             return
@@ -60,9 +60,11 @@ class ImageRetrivalHandler(APIHandler):
             category, co_id, time.time()-s2))
 
         s3 = time.time()
-        query_k = min(Config().image_retrieval.get('query_k'), len(labels)) if category == 'sr' else 1
+        query_k = min(Config().image_retrieval.get('query_k'),
+                      len(labels)) if category == 'sr' else 1
         indexs, distances = hnsw.knn_query(img_features, k=query_k)
-        logging.info('{}_{}: hnswlib query time:{:.4f}s'.format(category, co_id, time.time()-s3))
+        logging.info('{}_{}: hnswlib query time:{:.4f}s'.format(
+            category, co_id, time.time()-s3))
 
         code, img_url, similarity, oss_key = [], [], [], []
         for i, arr in enumerate(indexs):
@@ -70,7 +72,7 @@ class ImageRetrivalHandler(APIHandler):
             for j, index in enumerate(arr):
                 if not labels[index] in tmp_code:
                     tmp_code.append(labels[index])
-                    url=oss.oss_bucket.sign_url('GET',img_ids[index],3600)
+                    url = oss.oss_bucket.sign_url('GET', img_ids[index], 3600)
                     tmp_url.append(url)
                     tmp_key.append(img_ids[index])
                     tmp_similarity.append('{:.2%}'.format(1-distances[i][j]/2))
@@ -79,8 +81,10 @@ class ImageRetrivalHandler(APIHandler):
             similarity.append(tmp_similarity)
             oss_key.append(tmp_key)
         logging.info('{}_{}: {}'.format(category, co_id, code))
-        result = {'code': code, 'similarity': similarity,'oss_key': oss_key, 'url': img_url}
-        self.send_to_client_non_encrypt(200, message='success', response=result)
+        result = {'code': code, 'similarity': similarity,
+                  'oss_key': oss_key, 'url': img_url}
+        self.send_to_client_non_encrypt(
+            200, message='success', response=result)
 
 
 class IrFitHandler(APIHandler):
