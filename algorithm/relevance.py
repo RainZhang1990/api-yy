@@ -26,8 +26,16 @@ def relevance(order_src, dim, top):
 
 def relevance_parallel(order_src, dim, top):
     t1 = time.time()
-    cores = min(mp.cpu_count(), Config().relevance_workers,
-                len(order_src)//10000+1)
+    m = len(order_src)//Config().relevance.get('worker_load')+1
+    if m==1:
+        total_count = relevance(order_src, dim, top)
+        t_list = sorted(total_count.keys(),
+                    key=lambda k: total_count[k], reverse=True)
+        logging.info('relevance time:{:.3f}s cores:{} orders:{}'.format(
+            time.time()-t1, 1, len(order_src)))
+        return [{' '.join(k): total_count[k]} for k in t_list[:top]]
+
+    cores = min(mp.cpu_count(), Config().relevance.get('fit_workers'), m)
     process_pool = Pool(cores)
     process_list = []
     core_amount = math.ceil(len(order_src)/cores)
