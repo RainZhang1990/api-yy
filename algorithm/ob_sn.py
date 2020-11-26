@@ -44,6 +44,7 @@ class SN():
         self.order_index = dict()
         self.order_encoded = dict()
         self.order_encoded_s = dict()
+        self.order_encoded_n = dict()
 
         total_sku_qty = dict()  # 统计销量
         for order in self.order_list:
@@ -77,6 +78,7 @@ class SN():
                 sku_set.remove(sku_sorted[0][0])
 
             self.order_encoded_s[i] = sku_set
+            self.order_encoded_n[i] = sku_sorted[0][0]
 
     def fit(self):
         t1 = time.time()
@@ -135,8 +137,8 @@ class SN():
         for heap in heaps:  # 订单解析
             _len = len(heap.order_set)
             if _len >= self.min_batch:
-                batch_sn.append([self.order_list[iorder]
-                                 for iorder in heap.order_set])
+                batch_sn.append({self.order_list[iorder]: self.sku_list[self.order_encoded_n[iorder]]
+                                 for iorder in heap.order_set})
                 second_sn.append([self.sku_list[isku]
                                   for isku in heap.sku_set_s])
                 bin_sn.append(list(heap.bin_set))
@@ -161,18 +163,19 @@ def sn_test(order_src, sku_bin, sku_vol_prior, batch_sn, second_sn, bin_sn, seco
         assert len(bin_sn[i]) <= max_bin_area
 
         order_qty += len(order_batch)
-        order_set |= set(order_batch)
+        order_set |= set(order_batch.keys())
 
         sku_set = set()
-        for order in order_batch:
+        for order, sku_n in order_batch.items():
             sku_set_order = set(order_src[order].keys())
             sku_set |= sku_set_order
             sku_set_s = set(second_sn[i])
             sku_set_n = sku_set_order-sku_set_s
             assert len(sku_set_n) <= 1
+            assert sku_set_n.issubset({sku_n})
         bin_set = {sku_bin[sku] for sku in sku_set if sku in sku_bin}
         assert len(bin_set) <= max_bin_area
-    assert len(order_set) == order_qty
+    assert len(order_set) == order_qty  # 防止订单出现在多个批次
 
 
 def ob_sn(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  max_bin_area, heap_qty):
