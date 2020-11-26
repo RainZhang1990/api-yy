@@ -202,8 +202,8 @@ def ob_sn_parallel(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  ma
             max_batch_sn = batch_sn
             max_second_sn = second_sn
 
-    logging.info('ob_sn_parallel time:{:.2f}s cores:{} heap_qty:{}'.format(
-        time.time()-t1, cores, heap_qty))
+    logging.info('ob_sn_parallel time:{:.2f}s cores:{} max_covered:{} total:{} heap_qty:{}'.format(
+        time.time()-t1, cores, max_covered, len(order_src), heap_qty))
     return max_covered, max_batch_sn, max_second_sn
 
 
