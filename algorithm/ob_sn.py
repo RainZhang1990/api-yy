@@ -1,28 +1,23 @@
+
 import logging
 import math
 import time
 import copy
-import sys
 import pandas as pd
-
-from core.config import Config
-import numpy as np
-import numpy.random as nr
-from multiprocessing import Process, Pool
 import multiprocessing as mp
+import sys
+sys.path.append(".")
 
+from multiprocessing import Process, Pool
+from libs.utilities import planar_dict
+from core import config
+from core.config import Config
 
 class OrderHeap():
     def __init__(self, order_set, sku_set_s, bin_set):
         self.order_set = order_set
         self.sku_set_s = sku_set_s
         self.bin_set = bin_set
-
-
-class planar_dict(dict):
-    def __missing__(self, key):
-        value = self[key] = type(self)()
-        return value
 
 
 class SN():
@@ -197,21 +192,23 @@ def ob_sn_parallel(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  ma
         process_list.append(p)
     process_pool.close()
     process_pool.join()
-    max_covered, max_batch_sn, max_second_sn = 0, None, None
+    max_covered, max_batch_sn, max_second_sn, max_bin_sn = 0, None, None, None
     for v in process_list:
         covered, batch_sn, second_sn, bin_sn = v.get()
         if max_covered < covered:
             max_covered = covered
             max_batch_sn = batch_sn
             max_second_sn = second_sn
+            max_bin_sn = bin_sn
 
     logging.info('ob_sn_parallel time:{:.2f}s cores:{} max_covered:{} total:{} heap_qty:{}'.format(
         time.time()-t1, cores, max_covered, len(order_src), heap_qty))
-    return max_covered, max_batch_sn, max_second_sn
+    return max_covered, max_batch_sn, max_second_sn, max_bin_sn
 
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
+    config.init()
     df = pd.read_excel('d:/jyt2.xlsx', sheet_name='Sheet1')
     # df = pd.read_excel('d:/puxi.xlsx', sheet_name='Sheet1')
     order_src = planar_dict()
@@ -233,10 +230,14 @@ if __name__ == "__main__":
     second_qty, min_batch, max_bin_area = 8, 50, 100
 
     t1 = time.time()
-    for i in range(20):
-        covered, batch_sn, second_sn, bin_sn = ob_sn(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,
-                                                     max_bin_area, heap_qty=i*5+10)
-        sn_test(order_src, sku_bin, sku_vol_prior, batch_sn, second_sn, bin_sn, second_qty,
-                min_batch,  max_bin_area)
+    # for i in range(20):
+    #     covered, batch_sn, second_sn, bin_sn = ob_sn(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,
+    #                                                  max_bin_area, heap_qty=i*5+10)
+    #     sn_test(order_src, sku_bin, sku_vol_prior, batch_sn, second_sn, bin_sn, second_qty,
+    #             min_batch,  max_bin_area)
+    covered, batch_sn, second_sn, bin_sn = ob_sn_parallel(
+        order_src, sku_bin, sku_vol_prior, second_qty, min_batch, max_bin_area)
+    sn_test(order_src, sku_bin, sku_vol_prior, batch_sn, second_sn,
+            bin_sn, second_qty, min_batch,  max_bin_area)
     t2 = time.time()
     print('{:.2f}s'.format(t2-t1))

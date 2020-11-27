@@ -60,7 +60,7 @@ class OrderBatchSnHandler(APIHandler):
 
         logging.info('ob_sn  co_id: {} second_qty: {} min_batch: {} order_qty: {} bin_qty: {}'
                      .format(co_id, second_qty, min_batch, len(order_src), len(sku_bin)))
-        covered, batch_sn, second_sn = ob_sn_parallel(
+        covered, batch_sn, second_sn, sku_bin = ob_sn_parallel(
             order_src, sku_bin, dict(), second_qty, min_batch, 10000)
 
         self.send_to_client_non_encrypt(200, message='success',

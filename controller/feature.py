@@ -5,7 +5,7 @@ from core.config import Config
 from core.singleton import Singleton
 import hnswlib
 import logging
-from libs.utilities import Vividict
+from libs.utilities import planar_dict
 
 
 class FeatureManager(metaclass=Singleton):
@@ -15,7 +15,7 @@ class FeatureManager(metaclass=Singleton):
             raise Exception('filepath not exist')
         self.features = dict()
         for category in os.listdir(self.path):
-            self.features[category] = Vividict()
+            self.features[category] = planar_dict()
         self.load_feature()
 
     def load_feature(self):

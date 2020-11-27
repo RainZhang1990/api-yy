@@ -2,9 +2,11 @@ import logging
 import math
 import time
 import sys
+sys.path.append('.')
 import pandas as pd
 from itertools import combinations
 from core.config import Config
+from core import config
 
 from multiprocessing import Process, Pool
 import multiprocessing as mp
@@ -26,51 +28,53 @@ def relevance(order_src, dim, top):
 
 def relevance_parallel(order_src, dim, top):
     t1 = time.time()
-    m = len(order_src)//Config().relevance.get('worker_load')+1
-    if m==1:
+    fit_workers = Config().relevance.get('fit_workers')
+    load_workers = len(order_src)//Config().relevance.get('worker_load')+1
+    total_count = {}
+    if load_workers==1 or fit_workers==1:
         total_count = relevance(order_src, dim, top)
-        t_list = sorted(total_count.keys(),
-                    key=lambda k: total_count[k], reverse=True)
         logging.info('relevance time:{:.3f}s cores:{} orders:{}'.format(
             time.time()-t1, 1, len(order_src)))
-        return [{' '.join(k): total_count[k]} for k in t_list[:top]]
-
-    cores = min(mp.cpu_count(), Config().relevance.get('fit_workers'), m)
-    process_pool = Pool(cores)
-    process_list = []
-    core_amount = math.ceil(len(order_src)/cores)
-    for i in range(cores):
-        core_list = order_src[core_amount*i:core_amount*(i+1)]
-        p = process_pool.apply_async(relevance, args=(core_list, dim, top,))
-        process_list.append(p)
-    process_pool.close()
-    process_pool.join()
-    total_count = {}
-    for v in process_list:
-        sub_count = v.get()
-        for k, v in sub_count.items():
-            if not k in total_count:
-                total_count[k] = 0
-            total_count[k] += v
+    else:
+        cores = min(mp.cpu_count(), fit_workers, load_workers)
+        process_pool = Pool(cores)
+        process_list = []
+        core_amount = math.ceil(len(order_src)/cores)
+        for i in range(cores):
+            core_list = order_src[core_amount*i:core_amount*(i+1)]
+            p = process_pool.apply_async(relevance, args=(core_list, dim, top,))
+            process_list.append(p)
+        process_pool.close()
+        process_pool.join()
+        for v in process_list:
+            sub_count = v.get()
+            for k, v in sub_count.items():
+                if not k in total_count:
+                    total_count[k] = 0
+                total_count[k] += v
+        logging.info('relevance_parallel time:{:.3f}s cores:{} orders:{}'.format(
+            time.time()-t1, cores, len(order_src)))
     t_list = sorted(total_count.keys(),
                     key=lambda k: total_count[k], reverse=True)
-    logging.info('relevance_parallel time:{:.3f}s cores:{} orders:{}'.format(
-        time.time()-t1, cores, len(order_src)))
     return [{' '.join(k): total_count[k]} for k in t_list[:top]]
 
 
 def relevance_test(order_src, result):
-    for c in result:
+    for r in result:
+        c=None
+        for k, v in r.items():
+            c=[k.split(' '), v]
+            break
         n = 0
         for sku_set in order_src.values():
-            if set(c[0]).issubset(sku_set) and len(sku_set) > 1 and len(sku_set) < 50:
+            if set(c[0]).issubset(set(sku_set)) and len(sku_set) > 1 and len(sku_set) < 30:
                 n += 1
         assert n == c[1]
 
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-
+    config.init()
     df = pd.read_csv('d:/jjj.csv')
     order_src = dict()
     for row in df.itertuples():
