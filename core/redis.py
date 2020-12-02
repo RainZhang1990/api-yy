@@ -25,6 +25,7 @@ def msg_process():
     while True:
         try:
             for msg in subscribe().listen():
+                logging.getLogger().setLevel(logging.INFO)
                 logging.info('redis msg recieved: {}'.format(msg))
                 if  msg['type']=='message': 
                     m=msg['data'].split('_')
