@@ -119,7 +119,6 @@ def status_check(obj):
 
 
 def fit(save_dir, category, co_id, pca_n, batch, iid, labels, oss_bucket, tf_serving_ip, tf_serving_port):
-    logging.getLogger().setLevel(logging.INFO)
     queue1 = Queue(batch)
     queue2 = Queue(batch)
 
@@ -167,6 +166,7 @@ def oss_init(oss_bucket, category, co_id):
 
 
 def fit_queue(category):
+    logging.getLogger().setLevel(logging.INFO)
     config.init()
     redis.init()
     oss.init()
