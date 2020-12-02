@@ -25,6 +25,7 @@ def msg_process():
     while True:
         try:
             for msg in subscribe().listen():
+                logging.info('redis msg recieved: {}'.format(msg))
                 if  msg['type']=='message': 
                     m=msg['data'].split('_')
                     FeatureManager().update_feature(m[0],m[1])
@@ -35,6 +36,7 @@ def msg_process():
 
 def publish(msg):
     rd = redis.Redis(connection_pool=redis_pool)
+    logging.info('redis msg published: {}  channel: {}'.format(msg, chan_sub))
     rd.publish(chan_sub, msg)
 
 def subscribe():

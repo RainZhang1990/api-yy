@@ -104,7 +104,7 @@ def pca_hnsw(pca_n, data_length, queue2, category, co_id):
         t = time.time()
         for f in feature_list:
             hnsw.add_items(pca.transform(f))
-        logging.info('{}_{}: pca hnsw time {:.1f}s '
+        logging.info('{}_{}: pca hnsw time {:.2f}s '
                      .format(category, co_id, time.time()-t))
         return pca, hnsw
     except Exception as e:
@@ -149,7 +149,7 @@ def fit(save_dir, category, co_id, pca_n, batch, iid, labels, oss_bucket, tf_ser
     path = os.path.join(base_path, 'label.bin')
     pickle.dump(sorted(set(labels)), open(path, 'wb'))
 
-    logging.info('{}_{}: irfit total cost {}s'
+    logging.info('{}_{}: irfit total cost {:.2f}s'
                  .format(category, co_id, time.time()-t1))
 
 

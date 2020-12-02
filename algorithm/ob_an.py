@@ -5,7 +5,11 @@ import logging
 import random
 import json
 import requests
+import sys
+sys.path.append(".")
 # from gurobipy import *
+
+from libs.utilities import planar_dict
 
 M = 99999
 
@@ -24,13 +28,6 @@ def get_category_join_key(skus: dict):
             s = get_join_key(s, fmt)
     return s
 
-
-class Vividict(dict):
-    def __missing__(self, key):
-        value = self[key] = type(self)()
-        return value
-
-
 def ob_an(order_src: dict, min_batch_amount):
     """
     order_src:订单明细，以 dictionary<string,dictionary<string,int>> 的方式传入.
@@ -42,8 +39,8 @@ def ob_an(order_src: dict, min_batch_amount):
     order_distinct = order_src.keys()
     model = pulp.LpProblem("OrderGrouping", pulp.LpMaximize)
 
-    vd_order = Vividict()
-    vd_cate = Vividict()
+    vd_order = planar_dict()
+    vd_cate = planar_dict()
 
     category_dict = {}  # 订单内各sku数量-1 生成分类类别
     for order, detail in order_src.items():
@@ -118,7 +115,7 @@ def ob_an(order_src: dict, min_batch_amount):
 
 
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(logging.INFO)
     # order_amount=10000
     # sku=5000
     # orders={}
@@ -131,7 +128,7 @@ if __name__ == "__main__":
     orders = {'o2': {'sku1': 1, 'sku3': 1, }, 'o3': {'sku1': 1, 'sku4': 1, }, 'o4': {'sku2': 1, 'sku3': 1, }, 'o5': {'sku3': 1, 'sku4': 1, }, 'o6': {
         'sku3': 1, 'sku5': 1, }, 'o7': {'sku5': 1, 'sku7': 1, }, 'o8': {'sku6': 1, 'sku7': 1, }, 'o9': {'sku4': 1, 'sku7': 1, }, 'o10': {'sku8': 1, 'sku3': 1, }}
     t1 = time.time()
-    print(ob_lp(orders, 3))
+    print(ob_an(orders, 3))
     t2 = time.time()
     print('{:.0f}s'.format(t2-t1))
 
