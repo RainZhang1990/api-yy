@@ -4,6 +4,7 @@ from core.config import Config
 from controller.feature import *
 import _thread
 import time
+import os
 
 redis_pool = None
 chan_sub = None
@@ -21,11 +22,12 @@ def listen():
     _thread.start_new_thread(msg_process, ())
 
 def msg_process():
+    logging.info('redis msg listening, pid:{} ppid:{}'.format(msg, os.getpid(), os.getppid()))
     retry_interval = Config().redis.get('retry_interval')
     while True:
         try:
             for msg in subscribe().listen():
-                logging.info('redis msg recieved: {}'.format(msg))
+                logging.info('redis msg recieved:{} pid:{} ppid:{}'.format(msg, os.getpid(), os.getppid()))
                 if  msg['type']=='message': 
                     m=msg['data'].split('_')
                     FeatureManager().update_feature(m[0],m[1])
