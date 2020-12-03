@@ -4,8 +4,6 @@ import libs.validator
 from tornado.web import HTTPError
 from handler.api import APIHandler
 import time
-from core import redis as rd
-from core.config import Config
 from tornado.web import HTTPError, RequestHandler
 from tornado.escape import json_decode, json_encode
 

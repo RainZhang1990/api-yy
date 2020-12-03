@@ -11,7 +11,7 @@ from tornado.web import url
 
 import core
 import ir_fit
-from core import redis,oss,config
+from core import my_redis,oss,config
 from core.config import Config
 from handler import app,order_batch,image_retrieval,relevance
 
@@ -47,6 +47,7 @@ def signal_shutdown_handler(signal, frame):
 
 
 def main():
+    init_options()
     tornado.options.parse_command_line()
 
     if options.debug:
@@ -70,7 +71,6 @@ def main():
 
 
 def init_options():
-    # set options
     options.define("debug", default=Config().debug)
     options.define("thread", default=Config().thread)
     options.define('port', default=Config().port,
@@ -78,11 +78,8 @@ def init_options():
 
 
 if __name__ == '__main__':
-    config.init()
-    redis.init()
-    redis.listen()
+    my_redis.init()
     oss.init()
-    init_options()
-    ir_fit.main(Config().image_retrieval.get('fit_workers'))
+    ir_fit.main()
     main()
  

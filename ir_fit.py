@@ -10,7 +10,7 @@ from sklearn.decomposition import IncrementalPCA
 from multiprocessing import Process, Pool, Queue
 import multiprocessing as mp
 import oss2
-from core import redis, oss
+from core import my_redis, oss
 from core import config
 from core.config import Config
 from libs.tf import *
@@ -167,9 +167,6 @@ def oss_init(oss_bucket, category, co_id):
 
 def fit_queue(category):
     logging.getLogger().setLevel(logging.INFO)
-    config.init()
-    redis.init()
-    oss.init()
 
     batch = Config().image_retrieval.get('batch')
     pca_n = Config().image_retrieval.get('pca_n_components')
@@ -183,33 +180,33 @@ def fit_queue(category):
     while True:
         co_id=''
         try:
-            switch = redis.redis_get('ir', 'fit_switch') # 训练开关
+            switch = my_redis.redis_get('ir', 'fit_switch') # 训练开关
             if switch == 0:
                 time.sleep(retry_interval)
                 continue
-            co_id = redis.redis_rpop('ir', category)
+            co_id = my_redis.redis_rpop('ir', category)
             if co_id == None:
                 time.sleep(retry_interval)
                 continue
-            redis.redis_hset(category, co_id, 'status', 'fitting')
-            redis.redis_hset(category, co_id, 'stime',
+            my_redis.redis_hset(category, co_id, 'status', 'fitting')
+            my_redis.redis_hset(category, co_id, 'stime',
                              time.strftime(time_format, time.localtime()))
             labels, iid, = oss_init(oss_bucket, category, co_id) # 获取全部图像信息
             if len(iid) == 0:
                 raise Exception('oss image empty')
             fit(save_dir, category, co_id, pca_n, batch, iid, labels,
                 oss_bucket, tf_serving_ip, tf_serving_port)
-            redis.redis_hset(category, co_id, 'status', 'finished')
-            redis.redis_hset(category, co_id, 'total', len(set(labels)))
-            redis.redis_hset(category, co_id, 'etime',
+            my_redis.redis_hset(category, co_id, 'status', 'finished')
+            my_redis.redis_hset(category, co_id, 'total', len(set(labels)))
+            my_redis.redis_hset(category, co_id, 'etime',
                              time.strftime(time_format, time.localtime()))
-            redis.publish('{}_{}'.format(category, co_id))
+            my_redis.publish('{}_{}'.format(category, co_id))
         except Exception as e:
             logging.critical(
                 '{}_{}: fit error, {}'.format(category, co_id, e))
             try:
-                redis.redis_hset(category, co_id, 'status', 'failed')
-                redis.redis_hset(category, co_id, 'etime',
+                my_redis.redis_hset(category, co_id, 'status', 'failed')
+                my_redis.redis_hset(category, co_id, 'etime',
                                 time.strftime(time_format, time.localtime()))
             except Exception as e1:
                 logging.critical(
@@ -218,7 +215,8 @@ def fit_queue(category):
             
 
 
-def main(fit_workers, keep_alive=False):
+def main(keep_alive=False):
+    fit_workers = Config().image_retrieval.get('fit_workers')
     for _ in range(fit_workers):
         Process(target=fit_queue, args=('sr',)).start()
         # Process(target=fit_queue, args=('ic',)).start()
@@ -227,7 +225,5 @@ def main(fit_workers, keep_alive=False):
 
 
 if __name__ == "__main__":
-    config.init()
-    workers = Config().image_retrieval.get('fit_workers')
-    main(workers, True)
+    main(True)
 

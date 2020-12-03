@@ -11,7 +11,7 @@ from core.config import Config
 from .api import authenticated_async
 from libs.tf import *
 from controller.feature import FeatureManager
-from core import redis, oss
+from core import my_redis, oss
 
 
 class IndexHandler(tornado.web.RequestHandler):
@@ -103,7 +103,7 @@ class IrFitHandler(APIHandler):
 
         interval = Config().image_retrieval.get('fit_interval')
         time_format = Config().time_format
-        fit_status = redis.redis_hgetall(category, co_id)
+        fit_status = my_redis.redis_hgetall(category, co_id)
         if len(fit_status) > 0:
             fstatus = fit_status.get('status')
             if fstatus in ['queuing', 'fitting']:
@@ -116,8 +116,8 @@ class IrFitHandler(APIHandler):
                     403, 'failure', response='请求过于频繁,请稍后再试')
                 return
 
-        co_info = redis.redis_lpush('ir', category, co_id)
-        redis.redis_hset(category, co_id, 'status', 'queuing')
+        co_info = my_redis.redis_lpush('ir', category, co_id)
+        my_redis.redis_hset(category, co_id, 'status', 'queuing')
         self.send_to_client_non_encrypt(202, 'success', response='请求已接受')
 
 
@@ -153,5 +153,5 @@ class IrFitStatusHandler(APIHandler):
             return
         logging.info('{}_{}: Get IrFitStatus'.format(category, co_id))
 
-        result = redis.redis_hgetall(category, co_id)
+        result = my_redis.redis_hgetall(category, co_id)
         self.send_to_client_non_encrypt(200, 'success', response=result)

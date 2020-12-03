@@ -2,7 +2,7 @@ import os.path
 from core.singleton import Singleton
 import pickle
 from core.config import Config
-from core.singleton import Singleton
+from core import my_redis
 import hnswlib
 import logging
 from libs.utilities import planar_dict
@@ -17,6 +17,7 @@ class FeatureManager(metaclass=Singleton):
         for category in os.listdir(self.path):
             self.features[category] = planar_dict()
         self.load_feature()
+        my_redis.listen() # 监听训练
 
     def load_feature(self):
         version = '1'

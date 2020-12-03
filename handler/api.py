@@ -12,7 +12,6 @@ from tornado import gen
 from tornado.escape import json_decode, json_encode
 from tornado.web import HTTPError, RequestHandler
 
-from core import redis as rd
 from core.config import Config
 # from core.server_status import get_server_status
 # from microserver.pb import pbaccount_pb2

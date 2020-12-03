@@ -15,6 +15,11 @@ def init():
         Config().oss["endpoint"],
     )
 
+def create(access_id, access_secret, bucket, endpoint):
+    auth = oss2.Auth(access_id, access_secret)
+    oss_bucket = oss2.Bucket(auth, endpoint, bucket)
+    return oss_bucket
+
 # def blocking(method):
 #     """Wraps the method in an async method, and executes the function on `self.executor`."""
 
@@ -27,7 +32,3 @@ def init():
 #     return wrapper
 
 
-def create(access_id, access_secret, bucket, endpoint):
-    auth = oss2.Auth(access_id, access_secret)
-    oss_bucket = oss2.Bucket(auth, endpoint, bucket)
-    return oss_bucket
