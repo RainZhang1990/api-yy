@@ -74,7 +74,6 @@ def relevance_test(order_src, result):
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-    config.init()
     df = pd.read_csv('d:/jjj.csv')
     order_src = dict()
     for row in df.itertuples():

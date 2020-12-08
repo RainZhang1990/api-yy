@@ -118,15 +118,22 @@ class SN():
                 for order in small_heap.order_set:
                     sku_set_s = self.order_encoded_s[order]
                     bin_set = self.get_bin(self.order_encoded[order])
-                    for big_heap in heaps:
+                    min_index, min_val = None, math.inf
+                    for i, big_heap in enumerate(heaps):
                         if len(big_heap.order_set) >= self.min_batch:
                             new_len_s = len(sku_set_s | big_heap.sku_set_s)
                             new_len_bin = len(bin_set | big_heap.bin_set)
                             if new_len_s <= self.second_qty and new_len_bin <= self.max_bin_area:
-                                big_heap.order_set.add(order)
-                                big_heap.sku_set_s |= sku_set_s
-                                big_heap.bin_set |= bin_set
-                                break
+                                d =  (new_len_bin - len(big_heap.bin_set))*10 + new_len_s - len(big_heap.sku_set_s)
+                                if d < min_val:
+                                    min_index, min_val = i, d
+                                    if d == 0:
+                                        break
+                    if not min_index == None:  # 加入堆
+                        heaps[min_index].order_set.add(order)
+                        heaps[min_index].sku_set_s |= sku_set_s
+                        heaps[min_index].bin_set |= bin_set
+                    
 
         batch_sn, second_sn, bin_sn = [], [], []
         for heap in heaps:  # 订单解析
@@ -208,7 +215,6 @@ def ob_sn_parallel(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  ma
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-    config.init()
     df = pd.read_excel('d:/jyt2.xlsx', sheet_name='Sheet1')
     # df = pd.read_excel('d:/puxi.xlsx', sheet_name='Sheet1')
     order_src = planar_dict()
@@ -230,11 +236,6 @@ if __name__ == "__main__":
     second_qty, min_batch, max_bin_area = 8, 50, 100
 
     t1 = time.time()
-    # for i in range(20):
-    #     covered, batch_sn, second_sn, bin_sn = ob_sn(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,
-    #                                                  max_bin_area, heap_qty=i*5+10)
-    #     sn_test(order_src, sku_bin, sku_vol_prior, batch_sn, second_sn, bin_sn, second_qty,
-    #             min_batch,  max_bin_area)
     covered, batch_sn, second_sn, bin_sn = ob_sn_parallel(
         order_src, sku_bin, sku_vol_prior, second_qty, min_batch, max_bin_area)
     sn_test(order_src, sku_bin, sku_vol_prior, batch_sn, second_sn,
