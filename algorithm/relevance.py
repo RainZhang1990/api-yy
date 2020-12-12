@@ -23,7 +23,7 @@ def relevance(order_src, dim, top):
                 combo_count[c] += 1
     c_list = sorted(combo_count.keys(),
                     key=lambda k: combo_count[k], reverse=True)
-    return {k: combo_count[k] for k in c_list[:top*10]}
+    return {k: combo_count[k] for k in c_list[:top*100]}
 
 
 def relevance_parallel(order_src, dim, top):
@@ -36,7 +36,7 @@ def relevance_parallel(order_src, dim, top):
         logging.info('relevance time:{:.3f}s cores:{} orders:{}'.format(
             time.time()-t1, 1, len(order_src)))
     else:
-        cores = min(mp.cpu_count(), fit_workers, load_workers)
+        cores = min(fit_workers, load_workers)
         process_pool = Pool(cores)
         process_list = []
         core_amount = math.ceil(len(order_src)/cores)
@@ -66,7 +66,7 @@ def relevance_test(order_src, result):
             c=[k.split(' '), v]
             break
         n = 0
-        for sku_set in order_src.values():
+        for sku_set in order_src:
             if set(c[0]).issubset(set(sku_set)) and len(sku_set) > 1 and len(sku_set) < 30:
                 n += 1
         assert n == c[1]
@@ -81,12 +81,13 @@ if __name__ == "__main__":
         if not o_id in order_src:
             order_src[o_id] = []
         order_src[o_id].append(row[2])
-        # if len(order_src)==10000:
-        #     break
+        if len(order_src)==4:
+            break
 
     t1 = time.time()
-    result = relevance_parallel(list(order_src.values()), 2, 100)
-    # relevance_test(order_src, result)
+    order_src = list(order_src.values())
+    result = relevance_parallel(order_src, 3, 100)
+    relevance_test(order_src, result)
     t2 = time.time()
     print(result)
     print('{:.2f}s'.format(t2-t1))

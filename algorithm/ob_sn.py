@@ -1,4 +1,3 @@
-
 import logging
 import math
 import time
@@ -8,10 +7,9 @@ import multiprocessing as mp
 import sys
 sys.path.append(".")
 
-from multiprocessing import Process, Pool
-from libs.utilities import planar_dict
-from core import config
 from core.config import Config
+from libs.utilities import planar_dict
+from multiprocessing import Process, Pool
 
 class OrderHeap():
     def __init__(self, order_set, sku_set_s, bin_set):
@@ -34,25 +32,29 @@ class SN():
 
     def transform_order(self):
         self.order_qty = len(self.order_src)
-        self.order_list = list(self.order_src.keys())
+        self.order_list = []
+        self.sku_list = []
         self.sku_index = dict()
         self.order_index = dict()
         self.order_encoded = dict()
         self.order_encoded_s = dict()
         self.order_encoded_n = dict()
 
-        total_sku_qty = dict()  # 统计销量
-        for order in self.order_list:
-            for sku, qty in self.order_src[order].items():
-                if sku in total_sku_qty:
-                    total_sku_qty[sku] += qty
+        sku_qty_total = dict()  # 统计销量
+        for order, skus in self.order_src.items():
+            for sku, qty in skus.items():
+                if sku in sku_qty_total:
+                    sku_qty_total[sku] += qty
                 else:
-                    total_sku_qty[sku] = qty
+                    sku_qty_total[sku] = qty
 
-        self.sku_list = sorted(total_sku_qty.keys(),
-                               key=lambda k: total_sku_qty[k], reverse=True)  # sku销量降序
+        self.sku_list = sorted(sku_qty_total.keys(),
+                               key=lambda sku: (sku_qty_total[sku], sku), reverse=True)  # sku销量降序 sku码参与排序固定顺序
         for i, v in enumerate(self.sku_list):
             self.sku_index[v] = i
+        self.order_list = sorted(self.order_src.keys(),
+                                 key=lambda order: self.get_sort_score(self.order_src[order].keys()))  # 订单排序
+
         self.sku_bin = {
             self.sku_index[k]: v for k, v in self.sku_bin_src.items() if k in self.sku_index}
 
@@ -91,8 +93,8 @@ class SN():
                     new_len_s = len(sku_set_s | v.sku_set_s)
                     new_len_bin = len(bin_set | v.bin_set)
                     if new_len_s <= self.second_qty and new_len_bin <= self.max_bin_area:
-                        d = (new_len_s-len(v.sku_set_s)) * \
-                            2 + new_len_bin - len(v.bin_set)
+                        d = (new_len_s-len(v.sku_set_s)) * 2 \
+                             + new_len_bin - len(v.bin_set)
                         if d < min_val:
                             min_index, min_val = i, d
                             if d == 0:
@@ -124,16 +126,16 @@ class SN():
                             new_len_s = len(sku_set_s | big_heap.sku_set_s)
                             new_len_bin = len(bin_set | big_heap.bin_set)
                             if new_len_s <= self.second_qty and new_len_bin <= self.max_bin_area:
-                                d =  (new_len_bin - len(big_heap.bin_set))*10 + new_len_s - len(big_heap.sku_set_s)
+                                d = (new_len_bin - len(big_heap.bin_set)) * \
+                                    10 + new_len_s - len(big_heap.sku_set_s)
                                 if d < min_val:
                                     min_index, min_val = i, d
                                     if d == 0:
                                         break
-                    if  min_index:  # 加入堆
+                    if min_index:  # 加入堆
                         heaps[min_index].order_set.add(order)
                         heaps[min_index].sku_set_s |= sku_set_s
                         heaps[min_index].bin_set |= bin_set
-                    
 
         batch_sn, second_sn, bin_sn = [], [], []
         for heap in heaps:  # 订单解析
@@ -153,6 +155,15 @@ class SN():
 
     def get_bin(self, sku_set):
         return {self.sku_bin[sku] for sku in sku_set if sku in self.sku_bin}
+
+    def get_sort_score(self, sku_list):
+        tmp = [self.sku_index[sku] for sku in sku_list]
+        score, n, x = 0, 100000, self.second_qty
+        for i, isku in enumerate(sorted(tmp)):
+            score += isku*n**(x-i)
+            if i == x:
+                break
+        return score + len(sku_list)*n**(x+1)
 
 
 def sn_test(order_src, sku_bin, sku_vol_prior, batch_sn, second_sn, bin_sn, second_qty, min_batch,  max_bin_area):
@@ -190,7 +201,7 @@ def ob_sn(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  max_bin_are
 def ob_sn_parallel(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  max_bin_area):
     t1 = time.time()
     heap_qty = Config().sn.get('heap_qty')
-    cores = min(mp.cpu_count(), Config().sn.get('fit_workers'), len(heap_qty))
+    cores = min(Config().sn.get('fit_workers'), len(heap_qty))
     process_pool = Pool(cores)
     process_list = []
     for i in range(cores):
@@ -199,7 +210,8 @@ def ob_sn_parallel(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  ma
         process_list.append(p)
     process_pool.close()
     process_pool.join()
-    max_batch_qty, max_covered, max_batch_sn, max_second_sn, max_bin_sn = None, -1, None, None, None
+    max_batch_qty, max_covered, max_batch_sn, max_second_sn, max_bin_sn = None, - \
+        1, None, None, None
     for v in process_list:
         batch_qty, covered, batch_sn, second_sn, bin_sn = v.get()
         if max_covered < covered or (max_covered == covered and batch_qty < max_batch_qty):
