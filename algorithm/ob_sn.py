@@ -152,7 +152,7 @@ class SN():
                        for h in heaps if len(h.order_set) >= self.min_batch])
         logging.info('epoch:{} batch_qty:{} heap_qty:{} covered:{} order_qty:{} order_joined:{} left:{} time:{:.2f}s'.format(
             epoch, batch_qty_new, self.heap_qty, covered, self.order_qty, len(order_joined), len(order_joined)-covered, time.time()-t1))
-        return batch_qty_new, covered, batch_sn, second_sn, bin_sn
+        return batch_qty_new, self.heap_qty, covered, batch_sn, second_sn, bin_sn
 
     def get_bin(self, sku_set):
         return {self.sku_bin[sku] for sku in sku_set if sku in self.sku_bin}
@@ -205,19 +205,20 @@ def ob_sn_parallel(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  ma
         process_list.append(p)
     process_pool.close()
     process_pool.join()
-    max_batch_qty, max_covered, max_batch_sn, max_second_sn, max_bin_sn = None, - \
-        1, None, None, None
+    max_batch_qty, max_heap_qty, max_covered, max_batch_sn, max_second_sn, max_bin_sn = None, None, \
+        -1, None, None, None
     for v in process_list:
-        batch_qty, covered, batch_sn, second_sn, bin_sn = v.get()
+        batch_qty, heap_qty, covered, batch_sn, second_sn, bin_sn = v.get()
         if max_covered < covered or (max_covered == covered and batch_qty < max_batch_qty):
             max_batch_qty = batch_qty
+            max_heap_qty = heap_qty
             max_covered = covered
             max_batch_sn = batch_sn
             max_second_sn = second_sn
             max_bin_sn = bin_sn
 
-    logging.info('ob_sn_parallel time:{:.2f}s cores:{} max_covered:{} total:{} heap_qty:{}'.format(
-        time.time()-t1, cores, max_covered, len(order_src), heap_qty))
+    logging.info('ob_sn_parallel time:{:.2f}s cores:{} batch_qty:{} max_heap_qty:{} max_covered:{} total:{} heap_qty:{}'.format(
+        time.time()-t1, cores, max_batch_qty, max_heap_qty, max_covered, len(order_src), heap_qty))
     return max_covered, max_batch_sn, max_second_sn, max_bin_sn
 
 
