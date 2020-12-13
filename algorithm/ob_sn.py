@@ -2,6 +2,7 @@ import logging
 import math
 import time
 import copy
+import random
 import pandas as pd
 import multiprocessing as mp
 import sys
@@ -157,13 +158,7 @@ class SN():
         return {self.sku_bin[sku] for sku in sku_set if sku in self.sku_bin}
 
     def get_sort_score(self, sku_list):
-        tmp = [self.sku_index[sku] for sku in sku_list]
-        score, n, x = 0, 100000, self.second_qty
-        for i, isku in enumerate(sorted(tmp)):
-            score += isku*n**(x-i)
-            if i == x:
-                break
-        return score + len(sku_list)*n**(x+1)
+        return random.randint(0,len(sku_list)*100) # 按销量无用且低效 随机反而更稳定
 
 
 def sn_test(order_src, sku_bin, sku_vol_prior, batch_sn, second_sn, bin_sn, second_qty, min_batch,  max_bin_area):
