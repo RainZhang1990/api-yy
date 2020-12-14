@@ -195,13 +195,13 @@ def ob_sn(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  max_bin_are
 
 def ob_sn_parallel(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  max_bin_area):
     t1 = time.time()
-    heap_qty = Config().sn.get('heap_qty')
-    cores = min(Config().sn.get('fit_workers'), len(heap_qty))
+    heap_qty_list = Config().sn.get('heap_qty')
+    cores = min(Config().sn.get('fit_workers'), len(heap_qty_list))
     process_pool = Pool(cores)
     process_list = []
     for i in range(cores):
         p = process_pool.apply_async(
-            ob_sn, args=(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  max_bin_area, heap_qty[i]))
+            ob_sn, args=(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  max_bin_area, heap_qty_list[i]))
         process_list.append(p)
     process_pool.close()
     process_pool.join()
@@ -217,8 +217,8 @@ def ob_sn_parallel(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  ma
             max_second_sn = second_sn
             max_bin_sn = bin_sn
 
-    logging.info('ob_sn_parallel time:{:.2f}s cores:{} batch_qty:{} max_heap_qty:{} max_covered:{} total:{} heap_qty:{}'.format(
-        time.time()-t1, cores, max_batch_qty, max_heap_qty, max_covered, len(order_src), heap_qty))
+    logging.info('ob_sn_parallel time:{:.2f}s cores:{} batch_qty:{} max_heap_qty:{} max_covered:{} total:{} heap_qty_list:{}'.format(
+        time.time()-t1, cores, max_batch_qty, max_heap_qty, max_covered, len(order_src), heap_qty_list))
     return max_covered, max_batch_sn, max_second_sn, max_bin_sn
 
 
