@@ -114,6 +114,8 @@ class SN():
                     heaps.append(OrderHeap({order}, copy.deepcopy(
                         sku_set_s), copy.deepcopy(bin_set)))
                     order_joined.add(order)
+                    if 1 == self.min_batch: # min_batch可能等于1
+                        batch_qty_new += 1
             epoch += 1
 
         for small_heap in heaps:  # 合并堆
@@ -158,7 +160,10 @@ class SN():
         return {self.sku_bin[sku] for sku in sku_set if sku in self.sku_bin}
 
     def get_sort_score(self, sku_list):
-        return random.randint(0,len(sku_list)*100) # 按销量无用且低效 随机反而更稳定
+        # return random.randint(0,len(sku_list)*100) # 按销量无用且低效 随机反而更稳定
+
+        lv = min([self.sku_index[sku] for sku in sku_list])//100
+        return random.randint(lv*100000,(lv+1)*100000) 
 
 
 def sn_test(order_src, sku_bin, sku_vol_prior, batch_sn, second_sn, bin_sn, second_qty, min_batch,  max_bin_area):
@@ -184,7 +189,7 @@ def sn_test(order_src, sku_bin, sku_vol_prior, batch_sn, second_sn, bin_sn, seco
         bin_set = {sku_bin[sku] for sku in sku_set if sku in sku_bin}
         assert len(bin_set) <= max_bin_area
     assert len(order_set) == order_qty  # 防止订单出现在多个批次
-
+    print('Test passed')
 
 def ob_sn(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  max_bin_area, heap_qty):
     logging.getLogger().setLevel(logging.INFO)
@@ -225,22 +230,22 @@ def ob_sn_parallel(order_src, sku_bin, sku_vol_prior, second_qty, min_batch,  ma
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     df = pd.read_excel('d:/jyt2.xlsx', sheet_name='Sheet1')
-    # df = pd.read_excel('d:/puxi.xlsx', sheet_name='Sheet1')
+    # df = pd.read_excel('d:/ls.xlsx', sheet_name='Sheet1')
     order_src = planar_dict()
     for row in df.itertuples():
         order_src[str(row[1])][row[2]] = row[3]
 
-    df = pd.read_excel('d:/jyt2.xlsx', sheet_name='Sheet7')
-    sku_bin = dict()
-    for row in df.itertuples():
-        sku_bin[row[1]] = row[2]
-
-    df = pd.read_excel('d:/jyt2.xlsx', sheet_name='Sheet3')
-    sku_vol_prior = dict()
-    for row in df.itertuples():
-        sku_vol_prior[row[1]] = row[2]
-
+    # df = pd.read_excel('d:/jyt2.xlsx', sheet_name='Sheet7')
     # sku_bin = dict()
+    # for row in df.itertuples():
+    #     sku_bin[row[1]] = row[2]
+
+    # df = pd.read_excel('d:/jyt2.xlsx', sheet_name='Sheet3')
+    # sku_vol_prior = dict()
+    # for row in df.itertuples():
+    #     sku_vol_prior[row[1]] = row[2]
+
+    sku_bin = dict()
     sku_vol_prior = dict()
     second_qty, min_batch, max_bin_area = 8, 50, 100
 
